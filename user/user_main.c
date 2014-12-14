@@ -42,8 +42,8 @@ static void ICACHE_FLASH_ATTR recvTask(os_event_t *events)
         espconn_sent(connData[i].conn, &c, 1);
       }
     }
-    
-    uart_tx_one_char(c);
+//  echo    
+//  uart_tx_one_char(c);
   }
 
   if(UART_RXFIFO_FULL_INT_ST == (READ_PERI_REG(UART_INT_ST(UART0)) & UART_RXFIFO_FULL_INT_ST))
