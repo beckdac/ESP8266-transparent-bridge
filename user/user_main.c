@@ -61,7 +61,7 @@ void user_init(void)
 {
   uint8_t i;
 
-  uart_init(BIT_RATE_9600, BIT_RATE_9600);
+  uart_init(BIT_RATE_115200, BIT_RATE_115200);
 
   serverInit(23);
 
