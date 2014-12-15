@@ -12,6 +12,6 @@ Cons: zero configuration for the ESP8266 is provided.  The best way to handle th
 Enjoy.
 
 Flash command, e.g. w/ locations:
-'''
+```
 /opt/Espressif/esptool-py/esptool.py --port /dev/tty.usbserial-A603HRFF write_flash 0x00000 eagle.app.v6.flash.bin 0x40000 eagle.app.v6.irom0text.bin
-'''
+```
