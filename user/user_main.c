@@ -66,7 +66,7 @@ void user_init(void)
   serverInit(23);
 
   for (i = 0; i < 16; ++i)
-  	uart0_sendStr("\r\nready\r\n");
+  	uart0_sendStr("\r\n");
 
   system_os_task(recvTask, recvTaskPrio, recvTaskQueue, recvTaskQueueLen);
 }
