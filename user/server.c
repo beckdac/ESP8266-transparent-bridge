@@ -6,6 +6,7 @@
 #include "osapi.h"
 
 #include "server.h"
+#include "config.h"
 
 static struct espconn serverConn;
 static esp_tcp serverTcp;
@@ -33,7 +34,12 @@ static void ICACHE_FLASH_ATTR serverRecvCb(void *arg, char *data, unsigned short
 	serverConnData *conn=serverFindConnData(arg);
 	if (conn==NULL) return;
 
-	uart0_tx_buffer(data, len);
+#ifdef CONFIG_DYNAMIC
+	if (len >= 5 && data[0] == '+' && data[1] == '+' && data[2] == '+' && data[3] =='A' && data[4] == 'T') {
+		config_parse(conn->conn, data, len);
+	} else
+#endif
+		uart0_tx_buffer(data, len);
 }
 
 static void ICACHE_FLASH_ATTR serverReconCb(void *arg, sint8 err) {

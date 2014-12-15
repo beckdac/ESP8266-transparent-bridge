@@ -64,8 +64,10 @@ void user_init(void)
 
   uart_init(BIT_RATE_115200, BIT_RATE_115200);
 
-  // refresh wifi config
-  //config_execute();
+  #ifdef CONFIG_STATIC
+  	// refresh wifi config
+  	config_execute();
+  #endif
 
   serverInit(23);
 
