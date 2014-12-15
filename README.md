@@ -9,7 +9,7 @@ Pros:
 * It works. Do you already have a serial project to which you just want to add WiFi? This is your ticket. No more dealing with the AT command set.
 * You can program your Arduino over WiFi. Just hit the reset button and upload your sketch using avrdude's socket port, e.g.
 ```
-avrdude -c avrisp -p m328p -P net:169.254.4.1:23 -F -U flash:w:mySketch.hex:i
+avrdude -c avrisp -p m328p -P net:192.168.4.1:23 -F -U flash:w:mySketch.hex:i
 ```
 
 Cons: 
