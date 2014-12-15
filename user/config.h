@@ -15,7 +15,7 @@ void config_execute(void);
 
 #endif
 
-#define CONFIG_DYNAMIC
+//#define CONFIG_DYNAMIC
 #ifdef CONFIG_DYNAMIC
 
 void config_parse(struct espconn *conn, char *buf, int len);
