@@ -13,7 +13,7 @@ avrdude -c avrisp -p m328p -P net:192.168.4.1:23 -F -U flash:w:mySketch.hex:i
 ```
 
 Cons: 
-* Zero run-time configuration support at this time. In order to use this firmware, you have to have already configured the module using the AT firmware, including what AP to connect to, etc.. When you install this firmware, it uses those settings.
+* Zero run-time configuration support at this time. In order to use this firmware, you have to have already configured the module using the AT firmware, including what AP to connect to, etc.. When you install this firmware, it uses those settings.  Alternately, there is a config_execute function in user_main.c that can be enabled to do a compile time configuration.
 * Unbuffered TCP writes. Each incoming UART character gets sent as a separate TCP packet. This could potentially impact performance, however, in my hands that hasn't been an issue.
 
 

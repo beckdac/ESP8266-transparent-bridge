@@ -22,6 +22,7 @@
 #include "task.h"
 
 #include "server.h"
+#include "config.h"
 
 os_event_t    recvTaskQueue[recvTaskQueueLen];
 extern serverConnData connData[MAX_CONN];
@@ -62,6 +63,9 @@ void user_init(void)
   uint8_t i;
 
   uart_init(BIT_RATE_115200, BIT_RATE_115200);
+
+  // refresh wifi config
+  //config_execute();
 
   serverInit(23);
 
