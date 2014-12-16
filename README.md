@@ -11,9 +11,30 @@ Pros:
 ```
 avrdude -c avrisp -p m328p -P net:192.168.4.1:23 -F -U flash:w:mySketch.hex:i
 ```
+* Optional by compile time defines:
+ * Static configuration each time the unit boots from values defined in user/config.h.  Uncomment the following line in user/config.h:
+```
+#define CONFIG_STATIC
+```
+ * Dynamic configuration by remote telnet using +++AT prefixed commands. Enabled by default.  To disable, comment the following line in user/config.h:
+```
+#define CONFIG_DYNAMIC
+```
+The dynamic configuration commands are:
+```
++++AT                                    # do nothing, print OK
++++AT MODE                               # print current opmode 
++++AT MODE <mode: 1= STA, 2= AP, 3=both> # set current opmode
++++AT STA                                # print current ssid and password connected to
++++AT STA <ssid> <password>              # set ssid and password to connect to
++++AT AP                                 # print the current soft ap settings
++++AT AP <ssid>                          # set the AP as open with specified ssid
++++AT AP <ssid> <password>               # set the AP as WPA with password
++++AT RESET                              # software reset the unit
+```
+Upon success, all commands send back "OK" as their final output.  Note that passwords may not contain spaces.  For the softAP, the mode is fixed to AUTH_WPA_PSK.
 
 Cons: 
-* Zero run-time configuration support at this time. In order to use this firmware, you have to have already configured the module using the AT firmware, including what AP to connect to, etc.. When you install this firmware, it uses those settings.  Alternately, there is a config_execute function in user_main.c that can be enabled to do a compile time configuration.
 * Unbuffered TCP writes. Each incoming UART character gets sent as a separate TCP packet. This could potentially impact performance, however, in my hands that hasn't been an issue.
 
 
