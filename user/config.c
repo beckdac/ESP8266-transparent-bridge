@@ -35,8 +35,9 @@ void config_execute(void) {
 	wifi_get_macaddr(SOFTAP_IF, macaddr);
 	os_strncpy(ap_conf.ssid, AP_SSID, sizeof(ap_conf.ssid));
 	os_strncpy(ap_conf.password, AP_PASSWORD, sizeof(ap_conf.password));
-	os_snprintf(&ap_conf.password[strlen(AP_PASSWORD)], sizeof(ap_conf.password), "%02X%02X%02X", macaddr[3], macaddr[4], macaddr[5]);
+	os_snprintf(&ap_conf.password[strlen(AP_PASSWORD)], sizeof(ap_conf.password) - strlen(AP_PASSWORD), "_%02X%02X%02X", macaddr[3], macaddr[4], macaddr[5]);
 	ap_conf.authmode = AUTH_WPA_PSK;
+	ap_conf.channel = 6;
 	ETS_UART_INTR_DISABLE(); 
 	wifi_softap_set_config(&ap_conf);
 	ETS_UART_INTR_ENABLE();
@@ -78,12 +79,12 @@ void config_parse_args_free(uint8_t argc, char **argv) {
 	os_free(argv);
 }
 
-void config_cmd_reset(struct espconn *conn, int argc, char *argv[]) {
+void config_cmd_reset(struct espconn *conn, uint8_t argc, char *argv[]) {
 	espconn_sent(conn, MSG_OK, strlen(MSG_OK));
 	system_restart();
 }
 
-void config_cmd_mode(struct espconn *conn, int argc, char *argv[]) {
+void config_cmd_mode(struct espconn *conn, uint8_t argc, char *argv[]) {
 	uint8_t mode;
 
 	if (argc < 1)
@@ -106,7 +107,7 @@ void config_cmd_mode(struct espconn *conn, int argc, char *argv[]) {
 	}
 }
 
-void config_cmd_sta(struct espconn *conn, int argc, char *argv[]) {
+void config_cmd_sta(struct espconn *conn, uint8_t argc, char *argv[]) {
 	char *ssid = argv[1], *password = argv[2];
 	struct station_config sta_conf;
 
@@ -124,7 +125,7 @@ void config_cmd_sta(struct espconn *conn, int argc, char *argv[]) {
 	}
 }
 
-void config_cmd_ap(struct espconn *conn, int argc, char *argv[]) {
+void config_cmd_ap(struct espconn *conn, uint8_t argc, char *argv[]) {
 	char *ssid = argv[1], *password = argv[2];
 	struct softap_config ap_conf;
 
