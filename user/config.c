@@ -50,42 +50,69 @@ void config_execute(void) {
 #define MSG_ERROR "ERROR\r\n"
 #define MSG_INVALID_CMD "INVALID COMMAND\r\n"
 
-void config_parse_ssid_password(char *buf, char **ssid, char **password) {
-	for (; *buf == ' ' || *buf == '\t'; ++buf); // absorb spaces
-	if (*buf != '\0')
-		*ssid = buf;
-	else
-		*ssid = NULL;
-	for (; *buf != ' ' && *buf != '\t' && *buf != '\n' && *buf != '\r'; ++buf);
-	if (*buf != '\0')
-		buf = '\0';
-	else
-		*password = NULL;
-	for (; *buf == ' ' || *buf == '\t'; ++buf); // absorb spaces
-	if (*buf != '\0')
-		*password = buf;
-	for (; *buf != ' ' && *buf != '\t' && *buf != '\n' && *buf != '\r'; ++buf);
-	if (*buf != '\0')
-		buf = '\0';
+#define MAX_ARGS 12
+
+char **config_parse_args(char *buf, uint8_t *argc) {
+	const char delim[] = " \t";
+	char *save, *tok;
+	char **argv = (char **)os_zalloc(sizeof(char *) * MAX_ARGS);	// note fixed length
+	os_memset(argv, 0, sizeof(char *) * MAX_ARGS);
+
+	*argc = 0;
+	for (; *buf == ' ' || *buf == '\t'; ++buf); // absorb leading spaces
+	for (tok = strtok_r(buf, delim, &save); tok; tok = strtok_r(NULL, delim, &save)) {
+		argv[*argc] = strdup(tok);
+		*argc++;
+		if (*argc == MAX_ARGS) {
+			break;
+		}
+	}
 }
 
-void config_parse(struct espconn *conn, char *buf, int len) {
-	char *lbuf = (char *)os_zalloc(len + 1), *cmd;
-	// we need a '\0' end of the string
-	os_memcpy(lbuf, buf, len);
-	lbuf[len] = '\0';
-
-	espconn_sent(conn, lbuf, len);
-
-	if (os_strncmp(lbuf, "+++AT", 5) != 0) {
-		return;
+void config_parse_args_free(uint8_t argc, char **argv) {
+	uint8_t i;
+	for (i = 0; i <= argc; ++i) {
+		if (argv[i])
+			os_free(argv[i]);
 	}
-	cmd=&lbuf[5];
-	for (; *cmd == ' ' || *cmd == '\t'; ++cmd); // absorb spaces
-	if (os_strncmp(cmd, "STA", 3) == 0) {
-		char *ssid, *password;
-		struct station_config sta_conf;
-		config_parse_ssid_password(cmd, &ssid, &password);
+	os_free(argv);
+}
+
+void config_cmd_reset(struct espconn *conn, int argc, char *argv[]) {
+	espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+	system_restart();
+}
+
+void config_cmd_mode(struct espconn *conn, int argc, char *argv[]) {
+	uint8_t mode;
+
+	if (argc < 1)
+		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+	else {
+		mode = atoi(argv[1]);
+		if (mode >= 0 && mode <= 3) {
+			if (wifi_get_opmode() != mode) {
+				ETS_UART_INTR_DISABLE();
+				wifi_set_opmode(mode);
+				ETS_UART_INTR_ENABLE();
+				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+				system_restart();
+			} else {
+				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+			}
+		} else {
+			espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+		}
+	}
+}
+
+void config_cmd_sta(struct espconn *conn, int argc, char *argv[]) {
+	char *ssid = argv[1], *password = argv[2];
+	struct station_config sta_conf;
+
+	if (argc != 2) {
+		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+	} else {
 		os_strncpy(sta_conf.ssid, ssid, sizeof(sta_conf.ssid));
 		os_strncpy(sta_conf.password, password, sizeof(sta_conf.password));
 		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
@@ -94,10 +121,16 @@ void config_parse(struct espconn *conn, char *buf, int len) {
 		wifi_station_set_config(&sta_conf);		
 		ETS_UART_INTR_ENABLE(); 
 		wifi_station_connect();
-	} else if (os_strncmp(cmd, "AP", 2) == 0) {
-		char *ssid, *password;
-		struct softap_config ap_conf;
-		config_parse_ssid_password(cmd, &ssid, &password);
+	}
+}
+
+void config_cmd_ap(struct espconn *conn, int argc, char *argv[]) {
+	char *ssid = argv[1], *password = argv[2];
+	struct softap_config ap_conf;
+
+	if (argc != 2) {
+		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+	} else {
 		os_strncpy(ap_conf.ssid, ssid, sizeof(ap_conf.ssid));
 		os_strncpy(ap_conf.password, password, sizeof(ap_conf.password));
 		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
@@ -106,33 +139,51 @@ void config_parse(struct espconn *conn, char *buf, int len) {
 		ETS_UART_INTR_DISABLE();
 		wifi_softap_set_config(&ap_conf);
 		ETS_UART_INTR_ENABLE();
-	} else if (os_strncmp(cmd, "MODE", 4) == 0) {
-		uint8_t mode;
-		char *endptr;
-		cmd+=4;
-		for (; *cmd == ' ' || *cmd == '\t'; ++cmd); // absorb spaces
-		mode = strtoul(cmd, &endptr, 10);
-		if (cmd != endptr && mode >= 0 && mode <= 3) {
-			if (wifi_get_opmode() != mode) {
-				ETS_UART_INTR_DISABLE();
-				wifi_set_opmode(mode);
-				ETS_UART_INTR_ENABLE();
-				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
-				os_free(lbuf);
-				system_restart();
-			} else
-				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
-		} else {
-			espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
-		}
-	} else if (os_strncmp(cmd, "RESET", 5) == 0) {
-		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
-		system_restart();
-	} else if (*cmd == '\n' || *cmd == '\r') {
+	}
+}
+
+const config_commands_t config_commands[] = { 
+		{ "RESET", &config_cmd_reset }, 
+		{ "MODE", &config_cmd_mode },
+		{ "STA", &config_cmd_sta },
+		{ "AP", &config_cmd_ap },
+		{ NULL, NULL }
+	};
+
+void config_parse(struct espconn *conn, char *buf, int len) {
+	char *lbuf = (char *)os_zalloc(len + 1), **argv;
+	uint8_t i, argc;
+	// we need a '\0' end of the string
+	os_memcpy(lbuf, buf, len);
+	lbuf[len] = '\0';
+
+	espconn_sent(conn, lbuf, len);
+
+	// remove any CR / LF
+	for (i = 0; i < len; ++i)
+		if (lbuf[i] == '\n' || lbuf[i] == '\r')
+			lbuf[i] = '\0';
+
+	// verify the command prefix
+	if (os_strncmp(lbuf, "+++AT", 5) != 0) {
+		return;
+	}
+	// parse out buffer into arguments
+	argv = config_parse_args(lbuf, &argc);
+	if (argc == 0) {
 		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
 	} else {
-		espconn_sent(conn, MSG_INVALID_CMD, strlen(MSG_INVALID_CMD));
+		argc--;	// to mimic C main() argc argv
+		for (i = 0; config_commands[i].command; ++i) {
+			if (os_strncmp(argv[0], config_commands[i].command, strlen(argv[0])) == 0) {
+				config_commands[i].function(conn, argc, argv);
+				break;
+			}
+		}
+		if (!config_commands[i].command)
+			espconn_sent(conn, MSG_INVALID_CMD, strlen(MSG_INVALID_CMD));
 	}
+	config_parse_args_free(argc, argv);
 	os_free(lbuf);
 }
 
