@@ -35,7 +35,8 @@ void config_execute(void) {
 	wifi_get_macaddr(SOFTAP_IF, macaddr);
 	os_strncpy(ap_conf.ssid, AP_SSID, sizeof(ap_conf.ssid));
 	os_strncpy(ap_conf.password, AP_PASSWORD, sizeof(ap_conf.password));
-	os_snprintf(&ap_conf.password[strlen(AP_PASSWORD)], sizeof(ap_conf.password) - strlen(AP_PASSWORD), "_%02X%02X%02X", macaddr[3], macaddr[4], macaddr[5]);
+	//os_snprintf(&ap_conf.password[strlen(AP_PASSWORD)], sizeof(ap_conf.password) - strlen(AP_PASSWORD), "_%02X%02X%02X", macaddr[3], macaddr[4], macaddr[5]);
+	os_sprintf(&ap_conf.password[strlen(AP_PASSWORD)], "_%02X%02X%02X", macaddr[3], macaddr[4], macaddr[5]);
 	ap_conf.authmode = AUTH_WPA_PSK;
 	ap_conf.channel = 6;
 	ETS_UART_INTR_DISABLE(); 
@@ -49,20 +50,32 @@ void config_execute(void) {
 
 #define MSG_OK "OK\r\n"
 #define MSG_ERROR "ERROR\r\n"
-#define MSG_INVALID_CMD "INVALID COMMAND\r\n"
+#define MSG_INVALID_CMD "UNKNOWN COMMAND\r\n"
 
 #define MAX_ARGS 12
+#define MSG_BUF_LEN 128
+
+char *my_strdup(char *str) {
+	size_t len;
+	char *copy;
+
+	len = strlen(str) + 1;
+	if (!(copy = os_malloc((u_int)len)))
+		return (NULL);
+	os_memcpy(copy, str, len);
+	return (copy);
+}
 
 char **config_parse_args(char *buf, uint8_t *argc) {
 	const char delim[] = " \t";
 	char *save, *tok;
-	char **argv = (char **)os_zalloc(sizeof(char *) * MAX_ARGS);	// note fixed length
+	char **argv = (char **)os_malloc(sizeof(char *) * MAX_ARGS);	// note fixed length
 	os_memset(argv, 0, sizeof(char *) * MAX_ARGS);
 
 	*argc = 0;
 	for (; *buf == ' ' || *buf == '\t'; ++buf); // absorb leading spaces
 	for (tok = strtok_r(buf, delim, &save); tok; tok = strtok_r(NULL, delim, &save)) {
-		argv[*argc] = strdup(tok);
+		argv[*argc] = my_strdup(tok);
 		*argc++;
 		if (*argc == MAX_ARGS) {
 			break;
@@ -70,7 +83,7 @@ char **config_parse_args(char *buf, uint8_t *argc) {
 	}
 }
 
-void config_parse_args_free(uint8_t argc, char **argv) {
+void config_parse_args_free(uint8_t argc, char *argv[]) {
 	uint8_t i;
 	for (i = 0; i <= argc; ++i) {
 		if (argv[i])
@@ -130,6 +143,7 @@ void config_cmd_ap(struct espconn *conn, uint8_t argc, char *argv[]) {
 	struct softap_config ap_conf;
 
 	if (argc != 2) {
+		char buf[MSG_BUF_LEN];
 		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
 	} else {
 		os_strncpy(ap_conf.ssid, ssid, sizeof(ap_conf.ssid));
@@ -152,7 +166,7 @@ const config_commands_t config_commands[] = {
 	};
 
 void config_parse(struct espconn *conn, char *buf, int len) {
-	char *lbuf = (char *)os_zalloc(len + 1), **argv;
+	char *lbuf = (char *)os_malloc(len + 1), **argv;
 	uint8_t i, argc;
 	// we need a '\0' end of the string
 	os_memcpy(lbuf, buf, len);
@@ -171,6 +185,18 @@ void config_parse(struct espconn *conn, char *buf, int len) {
 	}
 	// parse out buffer into arguments
 	argv = config_parse_args(lbuf, &argc);
+// debugging
+	{
+		uint8_t i;
+		size_t len;
+		char buf[MSG_BUF_LEN];
+		for (i = 0; i < argc; ++i) {
+			//len = os_snprintf(buf, MSG_BUF_LEN, "argument %d: '%s'\r\n", i, argv[i]);
+			len = os_sprintf(buf, "argument %d: '%s'\r\n", i, argv[i]);
+			espconn_sent(conn, buf, len);
+		}
+	}
+// end debugging
 	if (argc == 0) {
 		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
 	} else {
