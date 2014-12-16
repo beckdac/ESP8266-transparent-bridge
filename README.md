@@ -5,7 +5,7 @@ Absolutely transparent bridge for the ESP8266
 
 This is really basic firmware for the ESP that creates a totally transparent TCP socket to ESP UART0 bridge. Characters come in on one interface and go out the other. The totally transparent bridge mode is something that has been missing and is available on higher priced boards.
 
-Pros: 
+**Pros: **
 * It works. Do you already have a serial project to which you just want to add WiFi? This is your ticket. No more dealing with the AT command set.
 * You can program your Arduino over WiFi. Just hit the reset button and upload your sketch using avrdude's socket port, e.g.
 ```
@@ -34,7 +34,7 @@ The dynamic configuration commands are:
 ```
 Upon success, all commands send back "OK" as their final output.  Note that passwords may not contain spaces.  For the softAP, the mode is fixed to AUTH_WPA_PSK.
 
-Cons: 
+**Cons: **
 * Unbuffered TCP writes. Each incoming UART character gets sent as a separate TCP packet. This could potentially impact performance, however, in my hands that hasn't been an issue.
 
 
