@@ -25,8 +25,10 @@ void config_execute(void) {
 	// connect to our station
 	os_strncpy(sta_conf.ssid, STA_SSID, sizeof(sta_conf.ssid));
 	os_strncpy(sta_conf.password, STA_PASSWORD, sizeof(sta_conf.password));
+	wifi_station_disconnect();
+	ETS_UART_INTR_DISABLE();
 	wifi_station_set_config(&sta_conf);		
-	wifi_station_disconnect();	// probably not necessary
+	ETS_UART_INTR_ENABLE();
 	wifi_station_connect();
 
 	// setup the soft AP
@@ -35,7 +37,9 @@ void config_execute(void) {
 	os_strncpy(ap_conf.password, AP_PASSWORD, sizeof(ap_conf.password));
 	os_snprintf(&ap_conf.password[strlen(AP_PASSWORD)], sizeof(ap_conf.password), "%02X%02X%02X", macaddr[3], macaddr[4], macaddr[5]);
 	ap_conf.authmode = AUTH_WPA_PSK;
+	ETS_UART_INTR_DISABLE(); 
 	wifi_softap_set_config(&ap_conf);
+	ETS_UART_INTR_ENABLE();
 }
 
 #endif
@@ -85,8 +89,10 @@ void config_parse(struct espconn *conn, char *buf, int len) {
 		os_strncpy(sta_conf.ssid, ssid, sizeof(sta_conf.ssid));
 		os_strncpy(sta_conf.password, password, sizeof(sta_conf.password));
 		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+		wifi_station_disconnect();
+		ETS_UART_INTR_DISABLE(); 
 		wifi_station_set_config(&sta_conf);		
-		wifi_station_disconnect();	// probably not necessary
+		ETS_UART_INTR_ENABLE(); 
 		wifi_station_connect();
 	} else if (os_strncmp(cmd, "AP", 2) == 0) {
 		char *ssid, *password;
@@ -96,7 +102,10 @@ void config_parse(struct espconn *conn, char *buf, int len) {
 		os_strncpy(ap_conf.password, password, sizeof(ap_conf.password));
 		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
 		ap_conf.authmode = AUTH_WPA_PSK;
+		ap_conf.channel = 6;
+		ETS_UART_INTR_DISABLE();
 		wifi_softap_set_config(&ap_conf);
+		ETS_UART_INTR_ENABLE();
 	} else if (os_strncmp(cmd, "MODE", 4) == 0) {
 		uint8_t mode;
 		char *endptr;
@@ -105,7 +114,9 @@ void config_parse(struct espconn *conn, char *buf, int len) {
 		mode = strtoul(cmd, &endptr, 10);
 		if (cmd != endptr && mode >= 0 && mode <= 3) {
 			if (wifi_get_opmode() != mode) {
+				ETS_UART_INTR_DISABLE();
 				wifi_set_opmode(mode);
+				ETS_UART_INTR_ENABLE();
 				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
 				os_free(lbuf);
 				system_restart();
