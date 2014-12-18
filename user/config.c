@@ -7,6 +7,9 @@
 #include "espconn.h"
 #include "mem.h"
 #include "osapi.h"
+#include "driver/uart.h"
+
+#include "flash_param.h"
 
 #else
 
@@ -170,6 +173,66 @@ void config_cmd_reset(struct espconn *conn, uint8_t argc, char *argv[]) {
 	system_restart();
 }
 
+void config_cmd_baud(struct espconn *conn, uint8_t argc, char *argv[]) {
+	flash_param_t *flash_param = flash_param_get();
+
+	if (argc == 0) {
+		char buf[MSG_BUF_LEN];
+		uint8_t len;
+		len = os_sprintf(buf, "BAUD=%d\n", flash_param->baud);
+		espconn_sent(conn, buf, len);
+		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+	} else if (argc != 1) {
+		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+	} else {
+		uint32_t baud = atoi(argv[1]);
+		if ((baud > (UART_CLK_FREQ / 16)) || baud == 0) {
+			espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+		} else {
+			// pump and dump fifo
+			while(TRUE) {
+				uint32_t fifo_cnt = READ_PERI_REG(UART_STATUS(0)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S);
+				if ((fifo_cnt >> UART_TXFIFO_CNT_S & UART_TXFIFO_CNT) == 0) {
+					break;
+				}
+			}
+			os_delay_us(10000);
+			uart_div_modify(0, UART_CLK_FREQ / baud);
+			flash_param->baud = baud;
+			flash_param_set();
+			espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+		}
+	}
+}
+
+void config_cmd_port(struct espconn *conn, uint8_t argc, char *argv[]) {
+	flash_param_t *flash_param = flash_param_get();
+
+	if (argc == 0) {
+		char buf[MSG_BUF_LEN];
+		uint8_t len;
+		len = os_sprintf(buf, "PORT=%d\n", flash_param->port);
+		espconn_sent(conn, buf, len);
+		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+	} else if (argc != 1) {
+		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+	} else {
+		uint32_t port = atoi(argv[1]);
+		if (port == 0) {
+			espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+		} else {
+			if (port != flash_param->port) {
+				flash_param->port = port;
+				flash_param_set();
+				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+				system_restart();
+			} else {
+				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+			}
+		}
+	}
+}
+
 void config_cmd_mode(struct espconn *conn, uint8_t argc, char *argv[]) {
 	uint8_t mode;
 
@@ -266,6 +329,8 @@ void config_cmd_ap(struct espconn *conn, uint8_t argc, char *argv[]) {
 
 const config_commands_t config_commands[] = { 
 		{ "RESET", &config_cmd_reset }, 
+		{ "BAUD", &config_cmd_baud },
+		{ "PORT", &config_cmd_port },
 		{ "MODE", &config_cmd_mode },
 		{ "STA", &config_cmd_sta },
 		{ "AP", &config_cmd_ap },

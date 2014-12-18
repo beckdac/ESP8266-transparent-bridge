@@ -31,6 +31,10 @@ Telnet into the module and issue commands prefixed by +++AT to escape each comma
 +++AT AP                                 # print the current soft ap settings
 +++AT AP <ssid>                          # set the AP as open with specified ssid
 +++AT AP <ssid> <password>               # set the AP as WPA with password
++++AT BAUD                               # print current UART baud rate
++++AT BAUD <baud>                        # set currrent UART baud rate
++++AT PORT                               # print current incoming TCP socket port
++++AT PORT <port>                        # set current incoming TCP socket port (restarts ESP)
 +++AT RESET                              # software reset the unit
 ```
 Upon success, all commands send back "OK" as their final output.  Note that passwords may not contain spaces.  For the softAP, the mode is fixed to AUTH_WPA_PSK.
