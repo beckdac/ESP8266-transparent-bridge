@@ -86,6 +86,7 @@ void config_execute(void) {
 	mode = wifi_get_opmode();
 	if (mode != STATIONAP_MODE) {
 		wifi_set_opmode(STATIONAP_MODE);
+		os_delay_us(10000);
 		system_restart();
 	}
 
@@ -199,8 +200,10 @@ void config_cmd_baud(struct espconn *conn, uint8_t argc, char *argv[]) {
 			os_delay_us(10000);
 			uart_div_modify(0, UART_CLK_FREQ / baud);
 			flash_param->baud = baud;
-			flash_param_set();
-			espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+			if (flash_param_set())
+				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+			else
+				espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
 		}
 	}
 }
@@ -223,14 +226,24 @@ void config_cmd_port(struct espconn *conn, uint8_t argc, char *argv[]) {
 		} else {
 			if (port != flash_param->port) {
 				flash_param->port = port;
-				flash_param_set();
-				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+				if (flash_param_set())
+					espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+				else
+					espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+				os_delay_us(10000);
 				system_restart();
 			} else {
 				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
 			}
 		}
 	}
+// debug
+{
+	char buf[1024];
+	flash_param = flash_param_get();
+	os_sprintf(buf, "flash param:\n\tmagic\t%d\n\tversion\t%d\n\tbaud\t%d\n\tport\t%d\n", flash_param->magic, flash_param->version, flash_param->baud, flash_param->port);
+	espconn_sent(conn, buf, strlen(buf));
+}
 }
 
 void config_cmd_mode(struct espconn *conn, uint8_t argc, char *argv[]) {
@@ -252,6 +265,7 @@ void config_cmd_mode(struct espconn *conn, uint8_t argc, char *argv[]) {
 				wifi_set_opmode(mode);
 				ETS_UART_INTR_ENABLE();
 				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+				os_delay_us(10000);
 				system_restart();
 			} else {
 				espconn_sent(conn, MSG_OK, strlen(MSG_OK));

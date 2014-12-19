@@ -22,6 +22,7 @@
 #include "task.h"
 
 #include "server.h"
+#include "config.h"
 #include "flash_param.h"
 
 os_event_t		recvTaskQueue[recvTaskQueueLen];
@@ -64,7 +65,9 @@ void user_init(void)
 
 
 	#ifdef CONFIG_DYNAMIC
-		flash_param_t *flash_param = flash_param_get();
+		flash_param_t *flash_param;
+		flash_param_init();
+		flash_param = flash_param_get();
 		uart_init(flash_param->baud, BIT_RATE_115200);
 	#else
 		uart_init(BIT_RATE_115200, BIT_RATE_115200);
