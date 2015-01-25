@@ -2,7 +2,7 @@
 #define ESPMISSINGINCLUIDES_H
 
 #include <ets_sys.h>
-
+#include <stdarg.h>
 //Missing function prototypes in include folders. Gcc will warn on these if we don't define 'em anywhere.
 //MOST OF THESE ARE GUESSED! but they seem to swork and shut up the compiler.
 
@@ -15,6 +15,8 @@ int ets_memcmp(const void *s1, const void *s2, size_t n);
 void *ets_memcpy(void *dest, const void *src, size_t n);
 void *ets_memset(void *s, int c, size_t n);
 int ets_sprintf(char *str, const char *format, ...)  __attribute__ ((format (printf, 2, 3)));
+int ets_vsprintf(char *str, const char *format, va_list argptr);
+int ets_vsnprintf(char *buffer, size_t sizeOfBuffer, const char *format, va_list argptr);
 int ets_str2macaddr(void *, void *);
 int ets_strcmp(const char *s1, const char *s2);
 char *ets_strcpy(char *dest, const char *src);

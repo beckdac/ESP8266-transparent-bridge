@@ -55,10 +55,10 @@ uart_config(uint8 uart_no)
 
   uart_div_modify(uart_no, UART_CLK_FREQ / (UartDev.baut_rate));
 
-  WRITE_PERI_REG(UART_CONF0(uart_no), UartDev.exist_parity
-                 | UartDev.parity
-                 | (UartDev.stop_bits << UART_STOP_BIT_NUM_S)
-                 | (UartDev.data_bits << UART_BIT_NUM_S));
+  if (uart_no == UART1)  //UART 1 always 8 N 1
+	  WRITE_PERI_REG(UART_CONF0(uart_no), CALC_UARTMODE(EIGHT_BITS, NONE_BITS, ONE_STOP_BIT));
+  else
+	  WRITE_PERI_REG(UART_CONF0(uart_no), CALC_UARTMODE(UartDev.data_bits, UartDev.parity, UartDev.stop_bits));
 
   //clear rx and tx fifo,not ready
   SET_PERI_REG_MASK(UART_CONF0(uart_no), UART_RXFIFO_RST | UART_TXFIFO_RST);

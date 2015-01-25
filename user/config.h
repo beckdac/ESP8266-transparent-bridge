@@ -20,11 +20,11 @@ void config_execute(void);
 
 typedef struct config_commands {
 	char *command;
-	void (*function)(struct espconn *conn, uint8_t argc, char *argv[]);
+	void(*function)(serverConnData *conn, uint8_t argc, char *argv[]);
 } config_commands_t;
 
 
-void config_parse(struct espconn *conn, char *buf, int len);
+void config_parse(serverConnData *conn, char *buf, int len);
 
 #endif
 

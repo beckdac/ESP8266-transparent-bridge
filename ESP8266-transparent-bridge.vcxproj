@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM">
+      <Configuration>Release</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="driver\uart.c" />
+    <ClCompile Include="user\config.c" />
+    <ClCompile Include="user\flash_param.c" />
+    <ClCompile Include="user\server.c" />
+    <ClCompile Include="user\user_main.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\at_version.h" />
+    <ClInclude Include="include\driver\uart.h" />
+    <ClInclude Include="include\driver\uart_register.h" />
+    <ClInclude Include="include\eagle_soc.h" />
+    <ClInclude Include="include\espmissingincludes.h" />
+    <ClInclude Include="include\task.h" />
+    <ClInclude Include="include\user_config.h" />
+    <ClInclude Include="user\config.h" />
+    <ClInclude Include="user\config_wifi.h" />
+    <ClInclude Include="user\flash_param.h" />
+    <ClInclude Include="user\server.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile_VS2013" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{55169C13-275D-46F6-B8E8-C3501533A18E}</ProjectGuid>
+    <Keyword>MakeFileProj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup>
+    <ConfigurationType>Makefile</ConfigurationType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <NMakeOutput />
+    <NMakePreprocessorDefinitions />
+    <IncludePath>..\xtensa-lx106-elf\lib\gcc\xtensa-lx106-elf\4.8.2\include;..\xtensa-lx106-elf\xtensa-lx106-elf\include\;include\driver;include;..\esp_iot_sdk_v0.9.5\include</IncludePath>
+    <ExecutablePath />
+    <ReferencePath />
+    <LibraryPath />
+    <LibraryWPath />
+    <ExcludePath />
+    <NMakeOutput />
+    <OutDir>bin</OutDir>
+    <IntDir>build</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <NMakeBuildCommandLine>espmake all flash</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>espmake clean all flash</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>espmake clean</NMakeCleanCommandLine>
+  </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <NMakeBuildCommandLine>espmake</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>espmake clean all</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>espmake clean</NMakeCleanCommandLine>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <BuildLog>
+      <Path />
+    </BuildLog>
+  </ItemDefinitionGroup>
+ 
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

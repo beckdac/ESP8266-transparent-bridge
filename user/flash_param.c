@@ -2,6 +2,7 @@
 #include "spi_flash.h"
 #include "ets_sys.h"
 #include "c_types.h"
+#include "driver/uart.h"
 #include "flash_param.h"
 
 #define FLASH_PARAM_START_SECTOR 0x3C
@@ -40,12 +41,13 @@ int ICACHE_FLASH_ATTR flash_param_set(void) {
 	return 1;
 }
 
-void ICACHE_FLASH_ATTR flash_param_init_defaults(void) {
+void ICACHE_FLASH_ATTR flash_param_init_defaults(void) {	
 	flash_param_t *flash_param = flash_param_get();
 	flash_param->magic = FLASH_PARAM_MAGIC;
 	flash_param->version = FLASH_PARAM_VERSION;
 	flash_param->baud = 115200;
 	flash_param->port = 23;
+	flash_param->uartconf0 = CALC_UARTMODE(EIGHT_BITS, NONE_BITS, ONE_STOP_BIT);
 	flash_param_set();
 }
 
