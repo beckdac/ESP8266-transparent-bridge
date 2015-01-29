@@ -30,14 +30,28 @@ Telnet into the module and issue commands prefixed by +++AT to escape each comma
 +++AT STA <ssid> <password>              # set ssid and password to connect to
 +++AT AP                                 # print the current soft ap settings
 +++AT AP <ssid>                          # set the AP as open with specified ssid
-+++AT AP <ssid> <password>               # set the AP as WPA with password
-+++AT BAUD                               # print current UART baud rate
-+++AT BAUD <baud>                        # set currrent UART baud rate
++++AT AP <ssid> <pw> [<authmode> [<ch>]]]# set the AP ssid and password, authmode:1= WEP,2= WPA,3= WPA2,4= WPA+WPA2 , channel: 1..13
++++AT BAUD                               # print current UART settings
++++AT BAUD <baud> [data [parity [stop]]] # set current UART baud rate and optional data bits = 5/6/7/8 , parity = N/E/O, stop bits = 1/1.5/2
 +++AT PORT                               # print current incoming TCP socket port
 +++AT PORT <port>                        # set current incoming TCP socket port (restarts ESP)
++++AT FLASH                              # print current flash settings
++++AT FLASH <1|0>                        # 1: The changed UART settings (++AT BAUD ...) are saved ( Default after boot), 0= no save to flash.
 +++AT RESET                              # software reset the unit
 ```
-Upon success, all commands send back "OK" as their final output.  Note that passwords may not contain spaces.  For the softAP, the mode is fixed to AUTH_WPA_PSK.
+Upon success, all commands send back "OK" as their final output.  Note that passwords may not contain spaces.
+
+The settings are saved after the commands 
++++AT PORT <port> 
++++AT BAUD <baud> ...
+
+After +++AT FLASH 0 the parameter of command +++AT BAUD <baud> ... are  NOT saved to the flash memory.
+The new settings are applied to the UART and saved only in RAM. 
+But a following +++AT PORT <port>  need to flash the settings for the necessary reboot. Then also the changed UART setting are saved to flash.
+
+The disable of flash the settings is for devices with baud rate changes to avoid permanently flash of the setting sector. 
+Some electric meter start conversion with 300 baud and accept a command to change to 9600.
+
 Example session:
 ```
 user@host:~$ telnet 192.168.1.197
@@ -69,7 +83,11 @@ In order, this gets the current opmode. Good, it is 3 for STA + AP. Next, the cu
 
 **Cons:** 
 
-* Unbuffered TCP writes. Each incoming UART character gets sent as a separate TCP packet. This could potentially impact performance, however, in my hands that hasn't been an issue.
+* limited buffered TCP writes. The first buffer is the UART FIFO. The second buffer is to collect new uart chars until the previous packet is sent.
+From SDK 0.9.4 the next espconn_sent must after espconn_sent_callback of the pre-packet.
+All incoming UART characters in the FIFO gets sent immediately via the tx-buffer. The resulting TCP packet has only some bytes. 
+
+This could potentially impact performance, however, in my hands that hasn't been an issue.
 
 
 Parts of this firmware are from the stock AT firmware and the esphttpd project.
@@ -78,4 +96,35 @@ Enjoy.
 Flash command, e.g. w/ locations:
 ```
 /opt/Espressif/esptool-py/esptool.py --port /dev/tty.usbserial-A603HRFF write_flash 0x00000 eagle.app.v6.flash.bin 0x40000 eagle.app.v6.irom0text.bin
+...
+or use ESP8266Flasher.exe from https://github.com/nodemcu/nodemcu-flasher with
+eagle.app.v6.flash.bin at 0x00000
+eagle.app.v6.irom0text.bin at 0x40000
+```
+
+#Visual Studio 2013 Integration
+see "New Windows terminal/flasher apps & Visual Studio" http://www.esp8266.com/viewtopic.php?f=9&t=911#p5113 to setup Visual Studio 2013
+Please install in a folder i.e. c:\Projects\Espressif\
+```
+ESP8266-transparent-bridge/              #this project
+esp_iot_sdk_v0.9.5/                      #http://bbs.espressif.com/download/file.php?id=189
+xtensa-lx106-elf/                        #pre-built compiler, see http://www.esp8266.com/viewtopic.php?f=9&t=911#p5113 , 
+                                         #I used xtensa-lx106-elf-141114.7z from  https://drive.google.com/uc?export=download&confirm=XHSI&id=0BzWyTGWIwcYQallNcTlxek1qNTQ 
+esptool-py.py                            #http://www.esp8266.com/download/file.php?id=321 
+```
+
+The files used by Visual Studio are:
+```
+ESP8266-transparent-bridge.sln           #solution file
+ESP8266-transparent-bridge.vcxproj       #project file, with IncludePath to xtensa-lx106-elf, sdk for intellisense and "Go To Definition" F12
+espmake.cmd                              #batch file called by build, rebuild, clean command, which set the path and call make with Makefile_VS2013
+Makefile_VS2013                          #the makefile called by the Visual Studio NMake project via espmake.cmd
+```
+The Debug config is used for compile, Release for compile & flash with esptool-py.py  
+
+The following absolute path names and COM Port number are expected:
+```
+C:\MinGW\bin;C:\MinGW\msys\1.0\bin       in espmake.cmd
+C:\Python27\python                       in Makefile_VS2013 for flash
+COM5                                     in Makefile_VS2013 for flash
 ```

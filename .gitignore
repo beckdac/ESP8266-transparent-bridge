@@ -27,3 +27,10 @@
 *.i*86
 *.x86_64
 *.hex
+
+## Ignore Visual Studio temporary, user, log files
+*.log
+*.opensdf
+*.sdf
+*.suo
+*.user

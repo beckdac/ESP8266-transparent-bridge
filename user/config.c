@@ -10,6 +10,7 @@
 #include "driver/uart.h"
 
 #include "flash_param.h"
+#include "server.h"
 
 #else
 
@@ -131,6 +132,8 @@ void config_execute(void) {
 #ifdef CONFIG_PARSE_TEST_UNIT
 #endif
 
+bool doflash = true;
+
 char *my_strdup(char *str) {
 	size_t len;
 	char *copy;
@@ -169,189 +172,241 @@ void config_parse_args_free(uint8_t argc, char *argv[]) {
 	os_free(argv);
 }
 
-void config_cmd_reset(struct espconn *conn, uint8_t argc, char *argv[]) {
-	espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+void config_cmd_reset(serverConnData *conn, uint8_t argc, char *argv[]) {
+	espbuffsentstring(conn, MSG_OK);
 	system_restart();
 }
 
-void config_cmd_baud(struct espconn *conn, uint8_t argc, char *argv[]) {
+void config_cmd_baud(serverConnData *conn, uint8_t argc, char *argv[]) {
 	flash_param_t *flash_param = flash_param_get();
-
-	if (argc == 0) {
-		char buf[MSG_BUF_LEN];
-		uint8_t len;
-		len = os_sprintf(buf, "BAUD=%d\n", flash_param->baud);
-		espconn_sent(conn, buf, len);
-		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
-	} else if (argc != 1) {
-		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
-	} else {
+	UartBitsNum4Char data_bits = GETUART_DATABITS(flash_param->uartconf0);
+	UartParityMode parity = GETUART_PARITYMODE(flash_param->uartconf0);
+	UartStopBitsNum stop_bits = GETUART_STOPBITS(flash_param->uartconf0);
+	const char *stopbits[4] = { "?", "1", "1.5", "2" };
+	const char *paritymodes[4] = { "E", "O", "N", "?" };
+	if (argc == 0)
+		espbuffsentprintf(conn, "BAUD=%d %d %s %s\r\n"MSG_OK, flash_param->baud,data_bits + 5, paritymodes[parity], stopbits[stop_bits]);
+	else {
 		uint32_t baud = atoi(argv[1]);
 		if ((baud > (UART_CLK_FREQ / 16)) || baud == 0) {
-			espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
-		} else {
-			// pump and dump fifo
-			while(TRUE) {
-				uint32_t fifo_cnt = READ_PERI_REG(UART_STATUS(0)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S);
-				if ((fifo_cnt >> UART_TXFIFO_CNT_S & UART_TXFIFO_CNT) == 0) {
-					break;
-				}
-			}
-			os_delay_us(10000);
-			uart_div_modify(0, UART_CLK_FREQ / baud);
-			flash_param->baud = baud;
-			if (flash_param_set())
-				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
-			else
-				espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+			espbuffsentstring(conn, MSG_ERROR);
+			return;
 		}
+		if (argc > 1) {
+			data_bits = atoi(argv[2]);
+			if ((data_bits < 5) || (data_bits > 8)) {
+				espbuffsentstring(conn, MSG_ERROR);
+				return;
+			}
+			data_bits -= 5;
+		}		
+		if (argc > 2) {
+			if (strcmp(argv[3], "N") == 0)
+				parity = NONE_BITS;
+			else if (strcmp(argv[3], "O") == 0) 				
+				parity = ODD_BITS;
+			else if (strcmp(argv[3], "E") == 0)  
+				parity = EVEN_BITS;
+			else {
+				espbuffsentstring(conn, MSG_ERROR);
+				return;
+			}
+		}
+		if (argc > 3) {
+			if (strcmp(argv[4], "1")==0)
+				stop_bits = ONE_STOP_BIT;
+			else if (strcmp(argv[4], "2")==0)
+				stop_bits = TWO_STOP_BIT;
+			else if (strcmp(argv[4], "1.5") == 0)
+				stop_bits = ONE_HALF_STOP_BIT;
+			else {
+				espbuffsentstring(conn, MSG_ERROR);
+				return;
+			}
+		}
+		// pump and dump fifo
+		while (TRUE) {
+			uint32_t fifo_cnt = READ_PERI_REG(UART_STATUS(0)) & (UART_TXFIFO_CNT << UART_TXFIFO_CNT_S);
+			if ((fifo_cnt >> UART_TXFIFO_CNT_S & UART_TXFIFO_CNT) == 0) {
+				break;
+			}
+		}
+		os_delay_us(10000);
+		uart_div_modify(UART0, UART_CLK_FREQ / baud);
+		flash_param->baud = baud;
+		flash_param->uartconf0 = CALC_UARTMODE(data_bits, parity, stop_bits);
+		WRITE_PERI_REG(UART_CONF0(UART0), flash_param->uartconf0);
+		if (doflash) {
+			if (flash_param_set())
+				espbuffsentstring(conn, MSG_OK);
+			else
+				espbuffsentstring(conn, MSG_ERROR);
+		}
+		else
+			espbuffsentstring(conn, MSG_OK);
+
 	}
 }
 
-void config_cmd_port(struct espconn *conn, uint8_t argc, char *argv[]) {
+void config_cmd_flash(serverConnData *conn, uint8_t argc, char *argv[]) {
+	bool err = false;
+	if (argc == 0) 
+		espbuffsentprintf(conn, "FLASH=%d\r\n", doflash);
+	else if (argc != 1) 
+		err=true;
+	else {
+		if (strcmp(argv[1], "1") == 0)
+			doflash = true;
+		else if (strcmp(argv[1], "0") == 0)
+			doflash = false;
+		else
+			err=true;
+	}
+	if (err)
+		espbuffsentstring(conn, MSG_ERROR);
+	else
+		espbuffsentstring(conn, MSG_OK);
+
+
+}
+
+void config_cmd_port(serverConnData *conn, uint8_t argc, char *argv[]) {
 	flash_param_t *flash_param = flash_param_get();
 
-	if (argc == 0) {
-		char buf[MSG_BUF_LEN];
-		uint8_t len;
-		len = os_sprintf(buf, "PORT=%d\n", flash_param->port);
-		espconn_sent(conn, buf, len);
-		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
-	} else if (argc != 1) {
-		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
-	} else {
+	if (argc == 0)
+		espbuffsentprintf(conn, "PORT=%d\r\n"MSG_OK, flash_param->port);
+	else if (argc != 1)
+		espbuffsentstring(conn, MSG_ERROR);
+	else {
 		uint32_t port = atoi(argv[1]);
-		if (port == 0) {
-			espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+		if ((port == 0)||(port>65535)) {
+			espbuffsentstring(conn, MSG_ERROR);
 		} else {
 			if (port != flash_param->port) {
 				flash_param->port = port;
 				if (flash_param_set())
-					espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+					espbuffsentstring(conn, MSG_OK);
 				else
-					espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+					espbuffsentstring(conn, MSG_ERROR);
 				os_delay_us(10000);
 				system_restart();
 			} else {
-				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+				espbuffsentstring(conn, MSG_OK);
 			}
 		}
 	}
-// debug
-{
-	char buf[1024];
-	flash_param = flash_param_get();
-	os_sprintf(buf, "flash param:\n\tmagic\t%d\n\tversion\t%d\n\tbaud\t%d\n\tport\t%d\n", flash_param->magic, flash_param->version, flash_param->baud, flash_param->port);
-	espconn_sent(conn, buf, strlen(buf));
-}
+	// debug
+	{
+		espbuffsentprintf(conn, "flash param:\n\tmagic\t%d\n\tversion\t%d\n\tbaud\t%d\n\tport\t%d\n", 
+			flash_param->magic, flash_param->version, flash_param->baud, flash_param->port);
+	}
 }
 
-void config_cmd_mode(struct espconn *conn, uint8_t argc, char *argv[]) {
+void config_cmd_mode(serverConnData *conn, uint8_t argc, char *argv[]) {
 	uint8_t mode;
 
 	if (argc == 0) {
-		char buf[MSG_BUF_LEN];
-		uint8_t len;
-		len = os_sprintf(buf, "MODE=%d\n", wifi_get_opmode());
-		espconn_sent(conn, buf, len);
-		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+		espbuffsentprintf(conn, "MODE=%d\r\n"MSG_OK, wifi_get_opmode());
 	} else if (argc != 1) {
-		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+		espbuffsentstring(conn, MSG_ERROR);
 	} else {
 		mode = atoi(argv[1]);
-		if (mode >= 0 && mode <= 3) {
+		if (mode >= 1 && mode <= 3) {
 			if (wifi_get_opmode() != mode) {
 				ETS_UART_INTR_DISABLE();
 				wifi_set_opmode(mode);
 				ETS_UART_INTR_ENABLE();
-				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+				espbuffsentstring(conn, MSG_OK);
 				os_delay_us(10000);
 				system_restart();
 			} else {
-				espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+				espbuffsentstring(conn, MSG_OK);
 			}
 		} else {
-			espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
+			espbuffsentstring(conn, MSG_ERROR);
 		}
 	}
 }
 
 // spaces are not supported in the ssid or password
-void config_cmd_sta(struct espconn *conn, uint8_t argc, char *argv[]) {
+void config_cmd_sta(serverConnData *conn, uint8_t argc, char *argv[]) {
 	char *ssid = argv[1], *password = argv[2];
 	struct station_config sta_conf;
 
 	os_bzero(&sta_conf, sizeof(struct station_config));
 	wifi_station_get_config(&sta_conf);
 
-	if (argc == 0) {
-		char buf[MSG_BUF_LEN];
-		uint8_t len;
-		len = os_sprintf(buf, "SSID=%s PASSWORD=%s\n", sta_conf.ssid, sta_conf.password);
-		espconn_sent(conn, buf, len);
-		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
-	} else if (argc != 2) {
-		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
-	} else {
+	if (argc == 0)
+		espbuffsentprintf(conn, "SSID=%s PASSWORD=%s\r\n"MSG_OK, sta_conf.ssid, sta_conf.password);
+	 else if (argc != 2)
+		espbuffsentstring(conn, MSG_ERROR);
+	else {
 		os_strncpy(sta_conf.ssid, ssid, sizeof(sta_conf.ssid));
 		os_strncpy(sta_conf.password, password, sizeof(sta_conf.password));
-		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+		espbuffsentstring(conn, MSG_OK);
 		wifi_station_disconnect();
-		ETS_UART_INTR_DISABLE(); 
-		wifi_station_set_config(&sta_conf);		
-		ETS_UART_INTR_ENABLE(); 
+		ETS_UART_INTR_DISABLE();
+		wifi_station_set_config(&sta_conf);
+		ETS_UART_INTR_ENABLE();
 		wifi_station_connect();
 	}
 }
 
 // spaces are not supported in the ssid or password
-void config_cmd_ap(struct espconn *conn, uint8_t argc, char *argv[]) {
+void config_cmd_ap(serverConnData *conn, uint8_t argc, char *argv[]) {
 	char *ssid = argv[1], *password = argv[2];
 	struct softap_config ap_conf;
-
+#define MAXAUTHMODES 5
 	os_bzero(&ap_conf, sizeof(struct softap_config));
 	wifi_softap_get_config(&ap_conf);
-
-	if (argc == 0) {
-		char buf[MSG_BUF_LEN];
-		uint8_t len;
-		len = os_sprintf(buf, "SSID=%s PASSWORD=%s AUTHMODE=%d CHANNEL=%d\n", ap_conf.ssid, ap_conf.password, ap_conf.authmode, ap_conf.channel);
-		espconn_sent(conn, buf, len);
-		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
-	} else if (argc == 1) {
+	if (argc == 0)
+		espbuffsentprintf(conn, "SSID=%s PASSWORD=%s AUTHMODE=%d CHANNEL=%d\r\n"MSG_OK, ap_conf.ssid, ap_conf.password, ap_conf.authmode, ap_conf.channel);
+	else if (argc > 4)
+		espbuffsentstring(conn, MSG_ERROR);
+	else { //argc > 0
 		os_strncpy(ap_conf.ssid, ssid, sizeof(ap_conf.ssid));
-		os_bzero(ap_conf.password, sizeof(ap_conf.password));
-		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
-		ap_conf.authmode = AUTH_OPEN;
-		ap_conf.channel = 6;
+		ap_conf.ssid_len = strlen(ssid); //without set ssid_len, no connection to AP is possible 
+		if (argc == 1) { //  no password
+			os_bzero(ap_conf.password, sizeof(ap_conf.password));
+			ap_conf.authmode = AUTH_OPEN;
+		} else { // with password
+			os_strncpy(ap_conf.password, password, sizeof(ap_conf.password));
+			if (argc > 2) { // authmode
+				int amode = atoi(argv[3]);
+				if ((amode < 1) || (amode>4)) {
+					espbuffsentstring(conn, MSG_ERROR);
+					return;
+				}
+				ap_conf.authmode = amode;
+			}
+			if (argc > 3) { //channel
+				int chan = atoi(argv[4]);
+				if ((chan < 1) || (chan>13)){
+					espbuffsentstring(conn, MSG_ERROR);
+					return;
+				}
+				ap_conf.channel = chan;
+			}
+		}
+		espbuffsentstring(conn, MSG_OK);
 		ETS_UART_INTR_DISABLE();
 		wifi_softap_set_config(&ap_conf);
 		ETS_UART_INTR_ENABLE();
-	} else if (argc == 2) {
-		os_strncpy(ap_conf.ssid, ssid, sizeof(ap_conf.ssid));
-		os_strncpy(ap_conf.password, password, sizeof(ap_conf.password));
-		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
-		ap_conf.authmode = AUTH_WPA_PSK;
-		ap_conf.channel = 6;
-		ETS_UART_INTR_DISABLE();
-		wifi_softap_set_config(&ap_conf);
-		ETS_UART_INTR_ENABLE();
-	} else {
-		espconn_sent(conn, MSG_ERROR, strlen(MSG_ERROR));
 	}
 }
 
-const config_commands_t config_commands[] = { 
-		{ "RESET", &config_cmd_reset }, 
+const config_commands_t config_commands[] = {
+		{ "RESET", &config_cmd_reset },
 		{ "BAUD", &config_cmd_baud },
 		{ "PORT", &config_cmd_port },
 		{ "MODE", &config_cmd_mode },
 		{ "STA", &config_cmd_sta },
 		{ "AP", &config_cmd_ap },
+		{ "FLASH", &config_cmd_flash },
 		{ NULL, NULL }
 	};
 
-void config_parse(struct espconn *conn, char *buf, int len) {
+void config_parse(serverConnData *conn, char *buf, int len) {
 	char *lbuf = (char *)os_malloc(len + 1), **argv;
 	uint8_t i, argc;
 	// we need a '\0' end of the string
@@ -359,7 +414,7 @@ void config_parse(struct espconn *conn, char *buf, int len) {
 	lbuf[len] = '\0';
 	
 	// command echo
-	//espconn_sent(conn, lbuf, len);
+	//espbuffsent(conn, lbuf, len);
 
 	// remove any CR / LF
 	for (i = 0; i < len; ++i)
@@ -376,18 +431,14 @@ void config_parse(struct espconn *conn, char *buf, int len) {
 // debugging
 	{
 		uint8_t i;
-		size_t len;
-		char buf[MSG_BUF_LEN];
 		for (i = 0; i < argc; ++i) {
-			//len = os_snprintf(buf, MSG_BUF_LEN, "argument %d: '%s'\r\n", i, argv[i]);
-			len = os_sprintf(buf, "argument %d: '%s'\r\n", i, argv[i]);
-			espconn_sent(conn, buf, len);
+			espbuffsentprintf(conn, "argument %d: '%s'\r\n", i, argv[i]);
 		}
 	}
 // end debugging
 #endif
 	if (argc == 0) {
-		espconn_sent(conn, MSG_OK, strlen(MSG_OK));
+		espbuffsentstring(conn, MSG_OK);
 	} else {
 		argc--;	// to mimic C main() argc argv
 		for (i = 0; config_commands[i].command; ++i) {
@@ -397,7 +448,7 @@ void config_parse(struct espconn *conn, char *buf, int len) {
 			}
 		}
 		if (!config_commands[i].command)
-			espconn_sent(conn, MSG_INVALID_CMD, strlen(MSG_INVALID_CMD));
+			espbuffsentstring(conn, MSG_INVALID_CMD);
 	}
 	config_parse_args_free(argc, argv);
 	os_free(lbuf);
