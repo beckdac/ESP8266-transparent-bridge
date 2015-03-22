@@ -96,11 +96,11 @@ Enjoy.
 
 Flash command, e.g. w/ locations:
 ```
-/opt/Espressif/esptool-py/esptool.py --port /dev/tty.usbserial-A603HRFF write_flash 0x00000 eagle.app.v6.flash.bin 0x40000 eagle.app.v6.irom0text.bin
+/opt/Espressif/esptool-py/esptool.py --port /dev/tty.usbserial-A603HRFF write_flash 0x00000 0x00000.bin 0x40000 0x40000.bin
 ...
 or use ESP8266Flasher.exe from https://github.com/nodemcu/nodemcu-flasher with
-eagle.app.v6.flash.bin at 0x00000
-eagle.app.v6.irom0text.bin at 0x40000
+0x00000.bin at 0x00000
+0x40000.bin at 0x40000
 ```
 
 #Visual Studio 2013 Integration
