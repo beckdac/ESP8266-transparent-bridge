@@ -177,6 +177,13 @@ void config_cmd_reset(serverConnData *conn, uint8_t argc, char *argv[]) {
 	system_restart();
 }
 
+void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
+	if (argc == 0)
+		espbuffsentprintf(conn, "Use HIGH or LOW as argument.\r\n"MSG_OK);
+	else {
+
+	}
+
 void config_cmd_baud(serverConnData *conn, uint8_t argc, char *argv[]) {
 	flash_param_t *flash_param = flash_param_get();
 	UartBitsNum4Char data_bits = GETUART_DATABITS(flash_param->uartconf0);
@@ -403,6 +410,7 @@ const config_commands_t config_commands[] = {
 		{ "STA", &config_cmd_sta },
 		{ "AP", &config_cmd_ap },
 		{ "FLASH", &config_cmd_flash },
+		{ "GPIO2", &config_cmd_gpio2 },
 		{ NULL, NULL }
 	};
 
