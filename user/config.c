@@ -12,6 +12,8 @@
 #include "flash_param.h"
 #include "server.h"
 
+#include "gpio.h"
+
 #else
 
 // test unit target for config_parse
@@ -179,10 +181,22 @@ void config_cmd_reset(serverConnData *conn, uint8_t argc, char *argv[]) {
 
 void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 	if (argc == 0)
-		espbuffsentprintf(conn, "Use HIGH or LOW as argument.\r\n"MSG_OK);
+		espbuffsentprintf(conn, "Use 0 for HIGH or 1 for LOW as argument.\r\n"MSG_OK);
 	else {
-
+		uint32_t gpio = atoi(argv[1]);
+                if ((gpio != 0)||(gpio != 1)) {
+			espbuffsentstring(conn, MSG_ERROR);
+                } else {
+			if (gpio == 0) {
+				gpio_output_set(0, BIT2, BIT2, 0);
+			}
+			if (gpio == 1) {
+				gpio_output_set(BIT2, 0, BIT2, 0);
+			}
+			espbuffsentstring(conn, MSG_OK);
+		}
 	}
+}
 
 void config_cmd_baud(serverConnData *conn, uint8_t argc, char *argv[]) {
 	flash_param_t *flash_param = flash_param_get();
