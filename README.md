@@ -38,7 +38,7 @@ Telnet into the module and issue commands prefixed by +++AT to escape each comma
 +++AT FLASH                              # print current flash settings
 +++AT FLASH <1|0>                        # 1: The changed UART settings (++AT BAUD ...) are saved ( Default after boot), 0= no save to flash.
 +++AT RESET                              # software reset the unit
-+++AT GPIO2 <1|0>			 # set GPIO2 pin HIGH or LOW (1/0)
++++AT GPIO2 <1|0>                        # set GPIO2 pin HIGH or LOW (1/0)
 ```
 Upon success, all commands send back "OK" as their final output.  Note that passwords may not contain spaces.
 

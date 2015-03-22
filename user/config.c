@@ -134,6 +134,7 @@ void config_execute(void) {
 #ifdef CONFIG_PARSE_TEST_UNIT
 #endif
 
+
 bool doflash = true;
 
 char *my_strdup(char *str) {
@@ -180,13 +181,18 @@ void config_cmd_reset(serverConnData *conn, uint8_t argc, char *argv[]) {
 }
 
 void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
+	// Initialize the GPIO subsystem.
+	gpio_init();
+	//Set GPIO2 to output mode
+	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
+	//Set GPIO2 high
+	//gpio_output_set(BIT2, 0, BIT2, 0);
+
 	if (argc == 0)
 		espbuffsentprintf(conn, "Use 0 for HIGH or 1 for LOW as argument.\r\n"MSG_OK);
 	else {
 		uint32_t gpio = atoi(argv[1]);
-                if ((gpio != 0)||(gpio != 1)) {
-			espbuffsentstring(conn, MSG_ERROR);
-                } else {
+                if ((gpio == 0)||(gpio == 1)) {
 			if (gpio == 0) {
 				gpio_output_set(0, BIT2, BIT2, 0);
 			}
@@ -194,6 +200,8 @@ void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 				gpio_output_set(BIT2, 0, BIT2, 0);
 			}
 			espbuffsentstring(conn, MSG_OK);
+                } else {
+			espbuffsentstring(conn, MSG_ERROR);
 		}
 	}
 }
