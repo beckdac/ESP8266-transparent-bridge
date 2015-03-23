@@ -28,4 +28,12 @@ void config_parse(serverConnData *conn, char *buf, int len);
 
 #endif
 
+#define CONFIG_GPIO
+#ifdef CONFIG_GPIO
+#include "gpio.h"
+
+void config_gpio(void);
+
+#endif
+
 #endif /* __CONFIG_H__ */

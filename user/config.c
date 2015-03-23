@@ -12,8 +12,6 @@
 #include "flash_param.h"
 #include "server.h"
 
-#include "gpio.h"
-
 #else
 
 // test unit target for config_parse
@@ -77,6 +75,17 @@ struct softap_config {
 
 #include "config.h"
 
+#ifdef CONFIG_GPIO
+void config_gpio(void) {
+	// Initialize the GPIO subsystem.
+	gpio_init();
+	//Set GPIO2 to output mode
+	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
+	//Set GPIO2 high
+	gpio_output_set(BIT2, 0, BIT2, 0);
+}
+#endif
+
 #ifdef CONFIG_STATIC
 
 void config_execute(void) {
@@ -134,7 +143,6 @@ void config_execute(void) {
 #ifdef CONFIG_PARSE_TEST_UNIT
 #endif
 
-
 bool doflash = true;
 
 char *my_strdup(char *str) {
@@ -180,16 +188,11 @@ void config_cmd_reset(serverConnData *conn, uint8_t argc, char *argv[]) {
 	system_restart();
 }
 
-void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
-	// Initialize the GPIO subsystem.
-	gpio_init();
-	//Set GPIO2 to output mode
-	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
-	//Set GPIO2 high
-	//gpio_output_set(BIT2, 0, BIT2, 0);
 
+#ifdef CONFIG_GPIO
+void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 	if (argc == 0)
-		espbuffsentprintf(conn, "Use 0 for HIGH or 1 for LOW as argument.\r\n"MSG_OK);
+		espbuffsentprintf(conn, "Use 0 for high or 1 for low.\r\n");
 	else {
 		uint32_t gpio = atoi(argv[1]);
                 if ((gpio == 0)||(gpio == 1)) {
@@ -205,6 +208,7 @@ void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 		}
 	}
 }
+#endif
 
 void config_cmd_baud(serverConnData *conn, uint8_t argc, char *argv[]) {
 	flash_param_t *flash_param = flash_param_get();
@@ -228,13 +232,13 @@ void config_cmd_baud(serverConnData *conn, uint8_t argc, char *argv[]) {
 				return;
 			}
 			data_bits -= 5;
-		}		
+		}
 		if (argc > 2) {
 			if (strcmp(argv[3], "N") == 0)
 				parity = NONE_BITS;
-			else if (strcmp(argv[3], "O") == 0) 				
+			else if (strcmp(argv[3], "O") == 0)
 				parity = ODD_BITS;
-			else if (strcmp(argv[3], "E") == 0)  
+			else if (strcmp(argv[3], "E") == 0)
 				parity = EVEN_BITS;
 			else {
 				espbuffsentstring(conn, MSG_ERROR);
@@ -279,9 +283,9 @@ void config_cmd_baud(serverConnData *conn, uint8_t argc, char *argv[]) {
 
 void config_cmd_flash(serverConnData *conn, uint8_t argc, char *argv[]) {
 	bool err = false;
-	if (argc == 0) 
+	if (argc == 0)
 		espbuffsentprintf(conn, "FLASH=%d\r\n", doflash);
-	else if (argc != 1) 
+	else if (argc != 1)
 		err=true;
 	else {
 		if (strcmp(argv[1], "1") == 0)
@@ -394,7 +398,7 @@ void config_cmd_ap(serverConnData *conn, uint8_t argc, char *argv[]) {
 		espbuffsentstring(conn, MSG_ERROR);
 	else { //argc > 0
 		os_strncpy(ap_conf.ssid, ssid, sizeof(ap_conf.ssid));
-		ap_conf.ssid_len = strlen(ssid); //without set ssid_len, no connection to AP is possible 
+		ap_conf.ssid_len = strlen(ssid); //without set ssid_len, no connection to AP is possible
 		if (argc == 1) { //  no password
 			os_bzero(ap_conf.password, sizeof(ap_conf.password));
 			ap_conf.authmode = AUTH_OPEN;
@@ -442,7 +446,7 @@ void config_parse(serverConnData *conn, char *buf, int len) {
 	// we need a '\0' end of the string
 	os_memcpy(lbuf, buf, len);
 	lbuf[len] = '\0';
-	
+
 	// command echo
 	//espbuffsent(conn, lbuf, len);
 

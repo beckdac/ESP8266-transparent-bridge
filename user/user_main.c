@@ -94,6 +94,10 @@ void user_init(void)
 		serverInit(23);
 	#endif
 
+	#ifdef CONFIG_GPIO
+		config_gpio();
+	#endif
+
 	for (i = 0; i < 16; ++i)
 		uart0_sendStr("\r\n");
 
