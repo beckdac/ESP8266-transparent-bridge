@@ -192,7 +192,7 @@ void config_cmd_reset(serverConnData *conn, uint8_t argc, char *argv[]) {
 #ifdef CONFIG_GPIO
 void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 	if (argc == 0)
-		espbuffsentprintf(conn, "Use 0 for high or 1 for low.\r\n");
+		espbuffsentprintf(conn, "Args: 0=low, 1=high, 2=reset (low/high).\r\n");
 	else {
 		uint32_t gpio = atoi(argv[1]);
                 if (gpio < 3) {
