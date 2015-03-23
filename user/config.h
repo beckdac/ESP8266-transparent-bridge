@@ -30,7 +30,7 @@ void config_parse(serverConnData *conn, char *buf, int len);
 
 #define CONFIG_GPIO
 #ifdef CONFIG_GPIO
-#include "gpio.h"
+#include <gpio.h>
 
 void config_gpio(void);
 

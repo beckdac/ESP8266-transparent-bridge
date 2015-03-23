@@ -195,11 +195,16 @@ void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 		espbuffsentprintf(conn, "Use 0 for high or 1 for low.\r\n");
 	else {
 		uint32_t gpio = atoi(argv[1]);
-                if ((gpio == 0)||(gpio == 1)) {
+                if (gpio < 3) {
 			if (gpio == 0) {
 				gpio_output_set(0, BIT2, BIT2, 0);
 			}
 			if (gpio == 1) {
+				gpio_output_set(BIT2, 0, BIT2, 0);
+			}
+			if (gpio == 2) {
+				gpio_output_set(0, BIT2, BIT2, 0);
+				os_delay_us(100000);
 				gpio_output_set(BIT2, 0, BIT2, 0);
 			}
 			espbuffsentstring(conn, MSG_OK);
