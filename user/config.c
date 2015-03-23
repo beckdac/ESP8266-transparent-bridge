@@ -198,16 +198,18 @@ void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
                 if (gpio < 3) {
 			if (gpio == 0) {
 				gpio_output_set(0, BIT2, BIT2, 0);
+				espbuffsentstring(conn, "LOW");
 			}
 			if (gpio == 1) {
 				gpio_output_set(BIT2, 0, BIT2, 0);
+				espbuffsentstring(conn, "HIGH");
 			}
 			if (gpio == 2) {
 				gpio_output_set(0, BIT2, BIT2, 0);
 				os_delay_us(100000);
 				gpio_output_set(BIT2, 0, BIT2, 0);
+				espbuffsentstring(conn, "RESET");
 			}
-			espbuffsentstring(conn, MSG_OK);
                 } else {
 			espbuffsentstring(conn, MSG_ERROR);
 		}
