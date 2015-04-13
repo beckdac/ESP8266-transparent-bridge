@@ -109,7 +109,7 @@ void config_execute(void) {
 	os_strncpy(sta_conf.password, STA_PASSWORD, sizeof(sta_conf.password));
 	wifi_station_disconnect();
 	ETS_UART_INTR_DISABLE();
-	wifi_station_set_config(&sta_conf);		
+	wifi_station_set_config(&sta_conf);
 	ETS_UART_INTR_ENABLE();
 	wifi_station_connect();
 
@@ -194,7 +194,7 @@ void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 	if (argc == 0)
 		espbuffsentprintf(conn, "Args: 0=low, 1=high, 2=reset (low/high).\r\n");
 	else {
-		uint32_t gpio = atoi(argv[1]);
+		uint8_t gpio = atoi(argv[1]);
                 if (gpio < 3) {
 			if (gpio == 0) {
 				gpio_output_set(0, BIT2, BIT2, 0);
