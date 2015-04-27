@@ -194,14 +194,12 @@ void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 	if (argc == 0)
 		espbuffsentprintf(conn, "Args: 0=low, 1=high, 2 <delay in ms>=reset (delay optional).\r\n");
 	else {
-		uint16_t gpiodelay;
-		if (argc == 1) {
-			gpiodelay = 100;
-		} else {
+		uint32_t gpiodelay = 100;
+		if (argc == 2) {
 			gpiodelay = atoi(argv[2]);
 		}
 		uint8_t gpio = atoi(argv[1]);
-    if (gpio < 3) {
+		if (gpio < 3) {
 			if (gpio == 0) {
 				gpio_output_set(0, BIT2, BIT2, 0);
 				espbuffsentstring(conn, "LOW\r\n");
@@ -216,7 +214,7 @@ void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 				gpio_output_set(BIT2, 0, BIT2, 0);
 				espbuffsentprintf(conn, "RESET %d ms\r\n",gpiodelay);
 			}
-    } else {
+		} else {
 			espbuffsentstring(conn, MSG_ERROR);
 		}
 	}
