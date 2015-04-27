@@ -24,7 +24,7 @@ avrdude -c avrisp -p m328p -P net:192.168.4.1:23 -F -U flash:w:mySketch.hex:i
 Telnet into the module and issue commands prefixed by +++AT to escape each command from bridge mode.  The dynamic configuration commands are:
 ```
 +++AT                                    # do nothing, print OK
-+++AT MODE                               # print current opmode 
++++AT MODE                               # print current opmode
 +++AT MODE <mode: 1= STA, 2= AP, 3=both> # set current opmode
 +++AT STA                                # print current ssid and password connected to
 +++AT STA <ssid> <password>              # set ssid and password to connect to
@@ -38,19 +38,19 @@ Telnet into the module and issue commands prefixed by +++AT to escape each comma
 +++AT FLASH                              # print current flash settings
 +++AT FLASH <1|0>                        # 1: The changed UART settings (++AT BAUD ...) are saved ( Default after boot), 0= no save to flash.
 +++AT RESET                              # software reset the unit
-+++AT GPIO2 <0|1|2>                      # 1: pull GPIO2 pin up (HIGH) 0: pull GPIO2 pin down (LOW) 2: pull GPIO2 down and up in 100ms (reset)
++++AT GPIO2 <0|1|2 100>                  # 1: pull GPIO2 pin up (HIGH) 0: pull GPIO2 pin down (LOW) 2: reset GPIO2, where 100 is optional to specify reset delay time in ms (default 100ms)
 ```
 Upon success, all commands send back "OK" as their final output.  Note that passwords may not contain spaces.
 
-The settings are saved after the commands 
-+++AT PORT <port> 
+The settings are saved after the commands
++++AT PORT <port>
 +++AT BAUD <baud> ...
 
 After +++AT FLASH 0 the parameter of command +++AT BAUD <baud> ... are  NOT saved to the flash memory.
-The new settings are applied to the UART and saved only in RAM. 
+The new settings are applied to the UART and saved only in RAM.
 But a following +++AT PORT <port>  need to flash the settings for the necessary reboot. Then also the changed UART setting are saved to flash.
 
-The disable of flash the settings is for devices with baud rate changes to avoid permanently flash of the setting sector. 
+The disable of flash the settings is for devices with baud rate changes to avoid permanently flash of the setting sector.
 Some electric meter start conversion with 300 baud and accept a command to change to 9600.
 
 Example session:
@@ -62,7 +62,7 @@ Escape character is '^]'.
 +++AT MODE
 MODE=3
 OK
-+++AT AP 
++++AT AP
 SSID=ESP_9E2EA6 PASSWORD= AUTHMODE=0 CHANNEL=3
 OK
 +++AT AP newSSID password
@@ -82,11 +82,11 @@ Connection closed.
 ```
 In order, this gets the current opmode. Good, it is 3 for STA + AP. Next, the current AP settings are retrieved. Next, the AP ssid is changed to newSSID and the authmode set to WPA and a password set. The AP settings are retrieved again to verify. Finally, the AP SSID is changed back to the original and by not using a password, the authmode is set to OPEN.
 
-**Cons:** 
+**Cons:**
 
 * limited buffered TCP writes. The first buffer is the UART FIFO. The second buffer is to collect new uart chars until the previous packet is sent.
 From SDK 0.9.4 the next espconn_sent must after espconn_sent_callback of the pre-packet.
-All incoming UART characters in the FIFO gets sent immediately via the tx-buffer. The resulting TCP packet has only some bytes. 
+All incoming UART characters in the FIFO gets sent immediately via the tx-buffer. The resulting TCP packet has only some bytes.
 
 This could potentially impact performance, however, in my hands that hasn't been an issue.
 
@@ -109,9 +109,9 @@ Please install in a folder i.e. c:\Projects\Espressif\
 ```
 ESP8266-transparent-bridge/              #this project
 esp_iot_sdk_v0.9.5/                      #http://bbs.espressif.com/download/file.php?id=189
-xtensa-lx106-elf/                        #pre-built compiler, see http://www.esp8266.com/viewtopic.php?f=9&t=911#p5113 , 
-                                         #I used xtensa-lx106-elf-141114.7z from  https://drive.google.com/uc?export=download&confirm=XHSI&id=0BzWyTGWIwcYQallNcTlxek1qNTQ 
-esptool-py.py                            #http://www.esp8266.com/download/file.php?id=321 
+xtensa-lx106-elf/                        #pre-built compiler, see http://www.esp8266.com/viewtopic.php?f=9&t=911#p5113 ,
+                                         #I used xtensa-lx106-elf-141114.7z from  https://drive.google.com/uc?export=download&confirm=XHSI&id=0BzWyTGWIwcYQallNcTlxek1qNTQ
+esptool-py.py                            #http://www.esp8266.com/download/file.php?id=321
 ```
 
 The files used by Visual Studio are:

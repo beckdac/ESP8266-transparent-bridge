@@ -124,7 +124,7 @@ void config_execute(void) {
 	os_sprintf(ap_conf.password[strlen(AP_PASSWORD)], "_%02X%02X%02X", macaddr[3], macaddr[4], macaddr[5]);
 	ap_conf.authmode = AUTH_WPA_PSK;
 	ap_conf.channel = 6;
-	ETS_UART_INTR_DISABLE(); 
+	ETS_UART_INTR_DISABLE();
 	wifi_softap_set_config(&ap_conf);
 	ETS_UART_INTR_ENABLE();
 }
@@ -192,10 +192,16 @@ void config_cmd_reset(serverConnData *conn, uint8_t argc, char *argv[]) {
 #ifdef CONFIG_GPIO
 void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 	if (argc == 0)
-		espbuffsentprintf(conn, "Args: 0=low, 1=high, 2=reset (low/high).\r\n");
+		espbuffsentprintf(conn, "Args: 0=low, 1=high, 2 <delay in ms>=reset (delay optional).\r\n");
 	else {
+		uint16_t gpiodelay;
+		if (argc == 1) {
+			gpiodelay = 100;
+		} else {
+			gpiodelay = atoi(argv[2]);
+		}
 		uint8_t gpio = atoi(argv[1]);
-                if (gpio < 3) {
+    if (gpio < 3) {
 			if (gpio == 0) {
 				gpio_output_set(0, BIT2, BIT2, 0);
 				espbuffsentstring(conn, "LOW\r\n");
@@ -206,11 +212,11 @@ void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 			}
 			if (gpio == 2) {
 				gpio_output_set(0, BIT2, BIT2, 0);
-				os_delay_us(100000);
+				os_delay_us(gpiodelay*1000);
 				gpio_output_set(BIT2, 0, BIT2, 0);
-				espbuffsentstring(conn, "RESET\r\n");
+				espbuffsentprintf(conn, "RESET %d ms\r\n",gpiodelay);
 			}
-                } else {
+    } else {
 			espbuffsentstring(conn, MSG_ERROR);
 		}
 	}
@@ -337,7 +343,7 @@ void config_cmd_port(serverConnData *conn, uint8_t argc, char *argv[]) {
 	}
 	// debug
 	{
-		espbuffsentprintf(conn, "flash param:\n\tmagic\t%d\n\tversion\t%d\n\tbaud\t%d\n\tport\t%d\n", 
+		espbuffsentprintf(conn, "flash param:\n\tmagic\t%d\n\tversion\t%d\n\tbaud\t%d\n\tport\t%d\n",
 			flash_param->magic, flash_param->version, flash_param->baud, flash_param->port);
 	}
 }
