@@ -34,3 +34,6 @@
 *.sdf
 *.suo
 *.user
+
+# Build directory
+build/
