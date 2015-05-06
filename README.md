@@ -1,6 +1,8 @@
 ESP8266-transparent-bridge
 ==========================
 
+[![Join the chat at https://gitter.im/beckdac/ESP8266-transparent-bridge](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/beckdac/ESP8266-transparent-bridge?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Absolutely transparent bridge for the ESP8266
 
 This is really basic firmware for the ESP that creates a totally transparent TCP socket to ESP UART0 bridge. Characters come in on one interface and go out the other. The totally transparent bridge mode is something that has been missing and is available on higher priced boards.
