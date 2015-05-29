@@ -98,13 +98,9 @@ static void ICACHE_FLASH_ATTR serverRecvCb(void *arg, char *data, unsigned short
 	//os_printf("Receive callback on conn %p\n", conn);
 	if (conn == NULL) return;
 
-
-#ifdef CONFIG_DYNAMIC
-	if (len >= 5 && data[0] == '+' && data[1] == '+' && data[2] == '+' && data[3] =='A' && data[4] == 'T') {
+	if (len >= 2 && data[0] == 'A' && data[1] == 'T') {
 		config_parse(conn, data, len);
-	} else
-#endif
-		uart0_tx_buffer(data, len);
+	}
 }
 
 static void ICACHE_FLASH_ATTR serverReconCb(void *arg, sint8 err) {

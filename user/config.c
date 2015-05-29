@@ -11,6 +11,7 @@
 
 #include "flash_param.h"
 #include "server.h"
+#include "io.h"
 
 #else
 
@@ -76,14 +77,7 @@ struct softap_config {
 #include "config.h"
 
 #ifdef CONFIG_GPIO
-void config_gpio(void) {
-	// Initialize the GPIO subsystem.
-	gpio_init();
-	//Set GPIO2 to output mode
-	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
-	//Set GPIO2 high
-	gpio_output_set(BIT2, 0, BIT2, 0);
-}
+
 #endif
 
 #ifdef CONFIG_STATIC
@@ -190,35 +184,7 @@ void config_cmd_reset(serverConnData *conn, uint8_t argc, char *argv[]) {
 
 
 #ifdef CONFIG_GPIO
-void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
-	if (argc == 0)
-		espbuffsentprintf(conn, "Args: 0=low, 1=high, 2 <delay in ms>=reset (delay optional).\r\n");
-	else {
-		uint32_t gpiodelay = 100;
-		if (argc == 2) {
-			gpiodelay = atoi(argv[2]);
-		}
-		uint8_t gpio = atoi(argv[1]);
-		if (gpio < 3) {
-			if (gpio == 0) {
-				gpio_output_set(0, BIT2, BIT2, 0);
-				espbuffsentstring(conn, "LOW\r\n");
-			}
-			if (gpio == 1) {
-				gpio_output_set(BIT2, 0, BIT2, 0);
-				espbuffsentstring(conn, "HIGH\r\n");
-			}
-			if (gpio == 2) {
-				gpio_output_set(0, BIT2, BIT2, 0);
-				os_delay_us(gpiodelay*1000);
-				gpio_output_set(BIT2, 0, BIT2, 0);
-				espbuffsentprintf(conn, "RESET %d ms\r\n",gpiodelay);
-			}
-		} else {
-			espbuffsentstring(conn, MSG_ERROR);
-		}
-	}
-}
+
 #endif
 
 void config_cmd_baud(serverConnData *conn, uint8_t argc, char *argv[]) {
@@ -288,7 +254,6 @@ void config_cmd_baud(serverConnData *conn, uint8_t argc, char *argv[]) {
 		}
 		else
 			espbuffsentstring(conn, MSG_OK);
-
 	}
 }
 
@@ -310,8 +275,19 @@ void config_cmd_flash(serverConnData *conn, uint8_t argc, char *argv[]) {
 		espbuffsentstring(conn, MSG_ERROR);
 	else
 		espbuffsentstring(conn, MSG_OK);
+}
 
-
+void config_cmd_version(serverConnData *conn, uint8_t argc, char *argv[]) {
+	bool err = false;
+	char *ver = "ESP_2015-05-29";
+	if (argc == 0)
+		espbuffsentprintf(conn, "%s\r\n", ver);
+	else
+		err=true;
+	if (err)
+		espbuffsentstring(conn, MSG_ERROR);
+	else
+		espbuffsentstring(conn, MSG_OK);
 }
 
 void config_cmd_port(serverConnData *conn, uint8_t argc, char *argv[]) {
@@ -440,16 +416,24 @@ void config_cmd_ap(serverConnData *conn, uint8_t argc, char *argv[]) {
 }
 
 const config_commands_t config_commands[] = {
-		{ "RESET", &config_cmd_reset },
-		{ "BAUD", &config_cmd_baud },
-		{ "PORT", &config_cmd_port },
-		{ "MODE", &config_cmd_mode },
-		{ "STA", &config_cmd_sta },
-		{ "AP", &config_cmd_ap },
-		{ "FLASH", &config_cmd_flash },
-		{ "GPIO2", &config_cmd_gpio2 },
-		{ NULL, NULL }
-	};
+	{ "RESET", &config_cmd_reset },
+	{ "BAUD", &config_cmd_baud },
+	{ "PORT", &config_cmd_port },
+	{ "MODE", &config_cmd_mode },
+	{ "STA", &config_cmd_sta },
+	{ "AP", &config_cmd_ap },
+	{ "FLASH", &config_cmd_flash },
+	{ "GPIO2", &config_cmd_gpio2 },
+	{ "GPIO4", &config_cmd_gpio4 },
+	{ "GPIO5", &config_cmd_gpio5 },
+	{ "GPIO12", &config_cmd_gpio12 },
+	{ "GPIO13", &config_cmd_gpio13 },
+	{ "GPIO14", &config_cmd_gpio14 },
+	{ "GPIO15", &config_cmd_gpio15 },
+	{ "GPIO16", &config_cmd_gpio16 },
+	{ "VERSION", &config_cmd_version },
+	{ NULL, NULL }
+};
 
 void config_parse(serverConnData *conn, char *buf, int len) {
 	char *lbuf = (char *)os_malloc(len + 1), **argv;
@@ -467,11 +451,11 @@ void config_parse(serverConnData *conn, char *buf, int len) {
 			lbuf[i] = '\0';
 
 	// verify the command prefix
-	if (os_strncmp(lbuf, "+++AT", 5) != 0) {
+	if (os_strncmp(lbuf, "AT", 2) != 0) {
 		return;
 	}
 	// parse out buffer into arguments
-	argv = config_parse_args(&lbuf[5], &argc);
+	argv = config_parse_args(&lbuf[3], &argc);
 #if 0
 // debugging
 	{
