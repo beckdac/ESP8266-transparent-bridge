@@ -19,6 +19,9 @@
 
 #include "config.h"
 #include "flash_param.h"
+void user_rf_pre_init(void)
+{
+}
 
 void user_init(void)
 {
