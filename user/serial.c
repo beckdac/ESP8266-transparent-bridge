@@ -10,6 +10,7 @@
 #include "os_type.h"
 #include "server.h"
 #include "task.h"
+#include "driver/gpio16.h"
 
 // UartDev is defined and initialized in rom code.
 extern UartDevice    UartDev;
@@ -30,10 +31,14 @@ static void ICACHE_FLASH_ATTR recvTask(os_event_t *events)
 			WRITE_PERI_REG(0X60000914, 0x73); //WTD
 			uint16 length = 0;
 			while ((READ_PERI_REG(UART_STATUS(UART0)) & (UART_RXFIFO_CNT << UART_RXFIFO_CNT_S)) && (length<MAX_UARTBUFFER))
+			{
 				uartbuffer[length++] = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
+				gpio_pulse(GPIO_2_PIN, 0);
+			}
 			for (i = 0; i < MAX_CONN; ++i)
 				if (tcpuartConnData[i].conn)
 					tcpuartespbuffsent(&tcpuartConnData[i], uartbuffer, length);
+			gpio_pulse(GPIO_4_PIN, 0);
 		}
 
 		if(UART_RXFIFO_FULL_INT_ST == (READ_PERI_REG(UART_INT_ST(UART0)) & UART_RXFIFO_FULL_INT_ST))
