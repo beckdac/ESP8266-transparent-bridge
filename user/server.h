@@ -14,10 +14,10 @@
 typedef struct serverConnData serverConnData;
 
 struct serverConnData {
-        struct espconn *conn;
-		char *txbuffer; //the buffer for the data to send
-		uint16  txbufferlen; //the length  of data in txbuffer
- 		bool readytosend; //true, if txbuffer can send by espconn_sent
+	struct espconn *conn;
+	char *txbuffer; //the buffer for the data to send
+	uint16  txbufferlen; //the length  of data in txbuffer
+	bool readytosend; //true, if txbuffer can send by espconn_sent
 };
 
 void ICACHE_FLASH_ATTR serverInit(int port);

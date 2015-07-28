@@ -17,6 +17,7 @@ void config_execute(void);
 
 #define CONFIG_DYNAMIC
 #ifdef CONFIG_DYNAMIC
+#include "server.h"
 
 typedef struct config_commands {
 	char *command;
@@ -30,9 +31,6 @@ void config_parse(serverConnData *conn, char *buf, int len);
 
 #define CONFIG_GPIO
 #ifdef CONFIG_GPIO
-#include <gpio.h>
-
-void config_gpio(void);
 
 #endif
 
