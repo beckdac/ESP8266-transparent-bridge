@@ -20,6 +20,7 @@ SDK_BASE	?= /opt/Espressif/ESP8266_SDK
 #Esptool.py path and port
 ESPTOOL		?= esptool.py
 ESPPORT		?= /dev/ttyUSB0
+ESPBAUD		?= 115200
 
 # name for the target project
 TARGET		= app
@@ -130,7 +131,7 @@ firmware:
 	$(Q) mkdir -p $@
 
 flash: firmware/0x00000.bin firmware/0x40000.bin
-	-$(ESPTOOL) --port $(ESPPORT) write_flash 0x00000 firmware/0x00000.bin 0x40000 firmware/0x40000.bin
+	-$(ESPTOOL) --port $(ESPPORT) --baud $(ESPBAUD) write_flash 0x00000 firmware/0x00000.bin 0x40000 firmware/0x40000.bin
 
 clean:
 	$(Q) rm -f $(APP_AR)
