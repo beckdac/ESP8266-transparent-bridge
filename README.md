@@ -32,7 +32,9 @@ Telnet into the module and issue commands prefixed by +++AT to escape each comma
 +++AT STA <ssid> <password>              # set ssid and password to connect to
 +++AT AP                                 # print the current soft ap settings
 +++AT AP <ssid>                          # set the AP as open with specified ssid
-+++AT AP <ssid> <pw> [<authmode> [<ch>]]]# set the AP ssid and password, authmode:1= WEP,2= WPA,3= WPA2,4= WPA+WPA2 , channel: 1..13
++++AT AP <ssid> <pw> [<authmode> [hide-ssid [<ch>]]]]
+                                         # set the AP ssid and password, authmode:1= WEP,2= WPA,3= WPA2,4= WPA+WPA2, 
+                                         # hide-ssid:1-hide, 0-show(not hide), channel: 1..13
 +++AT BAUD                               # print current UART settings
 +++AT BAUD <baud> [data [parity [stop]]] # set current UART baud rate and optional data bits = 5/6/7/8 , parity = N/E/O, stop bits = 1/1.5/2
 +++AT PORT                               # print current incoming TCP socket port

@@ -404,8 +404,8 @@ void config_cmd_ap(serverConnData *conn, uint8_t argc, char *argv[]) {
 	os_bzero(&ap_conf, sizeof(struct softap_config));
 	wifi_softap_get_config(&ap_conf);
 	if (argc == 0)
-		espbuffsentprintf(conn, "SSID=%s PASSWORD=%s AUTHMODE=%d CHANNEL=%d\r\n"MSG_OK, ap_conf.ssid, ap_conf.password, ap_conf.authmode, ap_conf.channel);
-	else if (argc > 4)
+		espbuffsentprintf(conn, "SSID=%s PASSWORD=%s AUTHMODE=%d IS_HIDDEH_SSID=%d CHANNEL=%d\r\n"MSG_OK, ap_conf.ssid, ap_conf.password, ap_conf.authmode, ap_conf.ssid_hidden, ap_conf.channel);
+	else if (argc > 5)
 		espbuffsentstring(conn, MSG_ERROR);
 	else { //argc > 0
 		os_strncpy(ap_conf.ssid, ssid, sizeof(ap_conf.ssid));
@@ -423,13 +423,21 @@ void config_cmd_ap(serverConnData *conn, uint8_t argc, char *argv[]) {
 				}
 				ap_conf.authmode = amode;
 			}
-			if (argc > 3) { //channel
-				int chan = atoi(argv[4]);
-				if ((chan < 1) || (chan>13)){
+			if (argc > 3) { //ssid_hidden
+				int ssid_hidden = atoi(argv[4]);
+				if ((ssid_hidden > 1) || (ssid_hidden < 0)){
 					espbuffsentstring(conn, MSG_ERROR);
 					return;
 				}
-				ap_conf.channel = chan;
+				ap_conf.ssid_hidden = ssid_hidden;
+				if (argc > 4) { //channel
+					int chan = atoi(argv[5]);
+					if ((chan < 1) || (chan>13)){
+						espbuffsentstring(conn, MSG_ERROR);
+						return;
+					}
+					ap_conf.channel = chan;
+				}
 			}
 		}
 		espbuffsentstring(conn, MSG_OK);
