@@ -310,8 +310,6 @@ void config_cmd_flash(serverConnData *conn, uint8_t argc, char *argv[]) {
 		espbuffsentstring(conn, MSG_ERROR);
 	else
 		espbuffsentstring(conn, MSG_OK);
-
-
 }
 
 void config_cmd_port(serverConnData *conn, uint8_t argc, char *argv[]) {
@@ -410,7 +408,7 @@ void config_cmd_ap(serverConnData *conn, uint8_t argc, char *argv[]) {
 	else { //argc > 0
 		os_strncpy(ap_conf.ssid, ssid, sizeof(ap_conf.ssid));
 		ap_conf.ssid_len = strlen(ssid); //without set ssid_len, no connection to AP is possible
-		if (argc == 1) { //  no password
+		if (argc == 1) { // no password
 			os_bzero(ap_conf.password, sizeof(ap_conf.password));
 			ap_conf.authmode = AUTH_OPEN;
 		} else { // with password

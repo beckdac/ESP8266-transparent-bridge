@@ -41,7 +41,7 @@ int ICACHE_FLASH_ATTR flash_param_set(void) {
 	return 1;
 }
 
-void ICACHE_FLASH_ATTR flash_param_init_defaults(void) {	
+void ICACHE_FLASH_ATTR flash_param_init_defaults(void) {
 	flash_param_t *flash_param = flash_param_get();
 	flash_param->magic = FLASH_PARAM_MAGIC;
 	flash_param->version = FLASH_PARAM_VERSION;
