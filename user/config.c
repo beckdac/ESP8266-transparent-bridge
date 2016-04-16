@@ -1,11 +1,10 @@
 #ifndef CONFIG_PARSE_TEST_UNIT
 
 // this is the normal build target ESP include set
-#include "espmissingincludes.h"
+#include "mem.h"
 #include "c_types.h"
 #include "user_interface.h"
 #include "espconn.h"
-#include "mem.h"
 #include "osapi.h"
 #include "driver/uart.h"
 
@@ -150,10 +149,13 @@ char *my_strdup(char *str) {
 	char *copy;
 
 	len = strlen(str) + 1;
-	if (!(copy = os_malloc((u_int)len)))
-		return (NULL);
-	os_memcpy(copy, str, len);
-	return (copy);
+    copy = (char*)os_malloc((u_int)len);
+    if ( copy ) {
+        os_memcpy(copy, str, len);
+        return (copy);
+    } else {
+        return (NULL);
+    }
 }
 
 char **config_parse_args(char *buf, uint8_t *argc) {
@@ -474,6 +476,7 @@ void config_parse(serverConnData *conn, char *buf, int len) {
 
 	// verify the command prefix
 	if (os_strncmp(lbuf, "+++AT", 5) != 0) {
+        os_free(lbuf);
 		return;
 	}
 	// parse out buffer into arguments
