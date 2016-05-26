@@ -1,7 +1,8 @@
 ESP8266-transparent-bridge
 ==========================
 
-## Note, this firmware is largely unsupported.  For new projects, I would recommend this firmware: [https://github.com/jeelabs/esp-link](https://github.com/jeelabs/esp-link).  It also supports a transparent bridge, but has additional features like a configuration web server, uController programming ports, and additional features for the esp12 class boards.
+I've noticed the jeelabs/esp-link fails in most new projects for wireless uploading to AVRs.  From scoping the problem, I suspect the GPIO reset time is not correct for most of the RESET cap setups.
+~~## Note, this firmware is largely unsupported.  For new projects, I would recommend this firmware: [https://github.com/jeelabs/esp-link](https://github.com/jeelabs/esp-link).  It also supports a transparent bridge, but has additional features like a configuration web server, uController programming ports, and additional features for the esp12 class boards.~~
 
 [![Join the chat at https://gitter.im/beckdac/ESP8266-transparent-bridge](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/beckdac/ESP8266-transparent-bridge?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
