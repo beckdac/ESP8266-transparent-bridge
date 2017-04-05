@@ -223,6 +223,79 @@ void config_cmd_gpio2(serverConnData *conn, uint8_t argc, char *argv[]) {
 }
 #endif
 
+void config_cmd_showMAC(serverConnData *conn, uint8_t argc, char *argv[]) {
+	uint8_t macaddr[6] = { 0, 0, 0, 0, 0, 0 };
+	if (argc == 0)
+	{
+		if (wifi_get_macaddr(STATION_IF, macaddr))
+		{
+			espbuffsentprintf(conn, "MAC: %X:%X:%X:%X:%X:%X\r\n"MSG_OK,
+				macaddr[0],
+				macaddr[1],
+				macaddr[2],
+				macaddr[3],
+				macaddr[4],
+				macaddr[5]);
+		}
+		else
+		{
+			espbuffsentprintf(conn, "Get MAC address failed");
+		}
+	}
+	else {
+		espbuffsentstring(conn, MSG_ERROR);
+	}
+}
+
+void config_cmd_showIP(serverConnData *conn, uint8_t argc, char *argv[]) {
+	struct station_config sta_conf;
+	struct ip_info ipinfo;
+	wifi_station_get_config(&sta_conf);
+	sta_conf.ssid[31] = 0; // ending caracter for printf just in case.
+	if (wifi_get_ip_info(STATION_IF, &ipinfo) == 0)
+	{
+		espbuffsentprintf(conn, "Get IP info failed");
+	}
+	else if (argc == 0)
+	{
+		uint8 iparr[4]; 
+		iparr[0] = ((uint8*)(&ipinfo.ip.addr))[0];
+		iparr[1] = ((uint8*)(&ipinfo.ip.addr))[1];
+		iparr[2] = ((uint8*)(&ipinfo.ip.addr))[2];
+		iparr[3] = ((uint8*)(&ipinfo.ip.addr))[3];
+			
+		espbuffsentprintf(conn, "SSID: %s\r\nIP: %d.%d.%d.%d\r\n", sta_conf.ssid,
+			iparr[0],
+			iparr[1],
+			iparr[2],
+			iparr[3]);
+		
+		iparr[0] = ((uint8*)(&ipinfo.netmask.addr))[0];
+		iparr[1] = ((uint8*)(&ipinfo.netmask.addr))[1];
+		iparr[2] = ((uint8*)(&ipinfo.netmask.addr))[2];
+		iparr[3] = ((uint8*)(&ipinfo.netmask.addr))[3];
+		espbuffsentprintf(conn, "Netmask: %d.%d.%d.%d\r\n",
+			iparr[0],
+			iparr[1],
+			iparr[2],
+			iparr[3]);
+
+		iparr[0] = ((uint8*)(&ipinfo.gw.addr))[0];
+		iparr[1] = ((uint8*)(&ipinfo.gw.addr))[1];
+		iparr[2] = ((uint8*)(&ipinfo.gw.addr))[2];
+		iparr[3] = ((uint8*)(&ipinfo.gw.addr))[3];
+		espbuffsentprintf(conn, "Gateway: %d.%d.%d.%d\r\n"MSG_OK,
+			iparr[0],
+			iparr[1],
+			iparr[2],
+			iparr[3]);
+	}
+	else 
+	{
+		espbuffsentstring(conn, MSG_ERROR);
+	}
+}
+
 void config_cmd_baud(serverConnData *conn, uint8_t argc, char *argv[]) {
 	flash_param_t *flash_param = flash_param_get();
 	UartBitsNum4Char data_bits = GETUART_DATABITS(flash_param->uartconf0);
@@ -345,6 +418,64 @@ void config_cmd_port(serverConnData *conn, uint8_t argc, char *argv[]) {
 			flash_param->magic, flash_param->version, flash_param->baud, flash_param->port);
 	}
 }
+serverConnData *callbackconn;
+void scan_done(void *arg, STATUS status)
+{
+	uint8 ssid[33];
+	char temp[128];
+
+	if (status == OK)
+	{
+		struct bss_info *bss_link = (struct bss_info *)arg;
+		bss_link = bss_link->next.stqe_next;//ignore the first one , it's invalid.
+
+		while (bss_link != NULL)
+		{
+			memset(ssid, 0, 33);
+			if (strlen(bss_link->ssid) <= 32)
+			{
+				memcpy(ssid, bss_link->ssid, strlen(bss_link->ssid));
+			}
+			else
+			{
+				memcpy(ssid, bss_link->ssid, 32);
+			}
+			espbuffsentprintf(callbackconn, "(Security:%d, SSID:\"%s\", Signal Strength:%d, Wifi Channel:%d)\r\n",
+				bss_link->authmode, 
+				ssid, bss_link->rssi,
+				//MAC2STR(bss_link->bssid), 
+				bss_link->channel);
+			bss_link = bss_link->next.stqe_next;
+		}
+		espbuffsentprintf(callbackconn, "Scan finished\r\n");
+	}
+	else
+	{
+		espbuffsentprintf(callbackconn, "Scan failed\r\n");
+	}
+
+}
+
+void config_cmd_scan(serverConnData *conn, uint8_t argc, char *argv[])
+{
+	callbackconn = conn;
+	// wifi scan has to after system init done
+	if (argc == 0)
+	{
+		if (wifi_get_opmode() == SOFTAP_MODE)
+		{
+			espbuffsentprintf(conn, "Cannot scan in AP mode\r\n");
+			return;
+		}
+		espbuffsentprintf(conn, "Scanning for Wifi around. Please wait...\r\n");
+		wifi_station_scan(NULL, scan_done);
+	}
+	else
+	{
+		espbuffsentstring(conn, MSG_ERROR);
+	}
+
+}
 
 void config_cmd_mode(serverConnData *conn, uint8_t argc, char *argv[]) {
 	uint8_t mode;
@@ -456,6 +587,9 @@ const config_commands_t config_commands[] = {
 		{ "AP", &config_cmd_ap },
 		{ "FLASH", &config_cmd_flash },
 		{ "GPIO2", &config_cmd_gpio2 },
+		{ "SHOWIP", &config_cmd_showIP },
+		{ "SHOWMAC", &config_cmd_showMAC },
+		{ "SCAN", &config_cmd_scan },
 		{ NULL, NULL }
 	};
 
