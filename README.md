@@ -46,7 +46,10 @@ Telnet into the module and issue commands prefixed by +++AT to escape each comma
 +++AT FLASH <1|0>                        # 1: The changed UART settings (++AT BAUD ...) are saved ( Default after boot), 0= no save to flash.
 +++AT RESET                              # software reset the unit
 +++AT GPIO2 <0|1|2 100>                  # 1: pull GPIO2 pin up (HIGH) 0: pull GPIO2 pin down (LOW) 2: reset GPIO2, where 100 is optional to specify reset delay time in ms (default 100ms)
-```
++++AT SHOWIP							 # Display Station IP Address, gateway and netmask
++++AT SHOWMAC							 # Display Station MAC.
++++AT SCAN								 # Display available networks around
+
 Upon success, all commands send back "OK" as their final output.  Note that passwords may not contain spaces.
 
 The settings are saved after the commands
