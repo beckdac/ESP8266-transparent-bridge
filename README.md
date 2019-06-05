@@ -49,6 +49,7 @@ Telnet into the module and issue commands prefixed by +++AT to escape each comma
 +++AT SHOWIP							 # Display Station IP Address, gateway and netmask
 +++AT SHOWMAC							 # Display Station MAC.
 +++AT SCAN								 # Display available networks around
+```
 
 Upon success, all commands send back "OK" as their final output.  Note that passwords may not contain spaces.
 
